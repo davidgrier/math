@@ -53,6 +53,7 @@
 ; 01/27/2009 DGG Added deinterlace keyword.  Documentation clean up.
 ; 01/27/2013 DGG Use rebin to calculate distance arrays.
 ;   Correctly handle deinterlace=0.  Added RAD keyword.
+; 03/04/2013 DGG Added COMPILE_OPT.
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -60,6 +61,8 @@ function azistd, _data, avg, $
                  center = center, $
                  rad = rad, $
                  deinterlace = deinterlace
+
+COMPILE_OPT IDL2
 
 on_error, 2			; return to calling routine on error
 
