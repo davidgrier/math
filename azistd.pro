@@ -94,10 +94,10 @@ else $
    rmax = nx/2 < ny/2
 
 if complexdata then $
-  sum = complexarr( rmax + 1 ) $
+  sum = complexarr(rmax + 1) $
 else $
-  sum = dblarr( rmax + 1 )
-n = dblarr( rmax + 1 )
+  sum = dblarr(rmax + 1)
+n = dblarr(rmax + 1)
 
 r = rebin((dindgen(nx) - xc)^2, nx, ny) + $
     rebin((dindgen(1, ny) - yc)^2, nx, ny)
@@ -108,7 +108,7 @@ if keyword_set(deinterlace) then begin
    r = r[*, n0:*:2]
 endif
 
-w = where( r lt rmax^2, ngood )
+w = where(r lt rmax^2, ngood)
 
 if ngood gt 0 then begin
    r = sqrt(r[w])               ; only consider data in range
@@ -122,19 +122,19 @@ endif
 
 for i = 0L, ngood-1 do begin	; loop through data points in range
    ndx = ri[i]                  ; lower bin
-   sum[ndx]   = sum[ndx]   + dl[i]
-   n[ndx]     = n[ndx]     + fl[i]
+   sum[ndx] += dl[i]
+   n[ndx]   += fl[i]
                                 ; higher bin
-   sum[ndx+1] = sum[ndx+1] + dh[i]
-   n[ndx+1]   = n[ndx+1]   + fh[i]
+   sum[ndx+1] += dh[i]
+   n[ndx+1]   += fh[i]
 endfor
 avg = sum/n                     ; normalize by number in each bin
 
-sum =  0 * sum                  ; reset sum for standard deviation
+sum *= 0                        ; reset sum for standard deviation
 for i = 0L, ngood-1 do begin    ; loop through data points in range
    ndx = ri[i]                  ; lower bin
-   sum[ndx]   = sum[ndx]   + fl[i] * (d[i] - avg[ndx]  )^2
-   sum[ndx+1] = sum[ndx+1] + fh[i] * (d[i] - avg[ndx+1])^2
+   sum[ndx]   += fl[i] * (d[i] - avg[ndx]  )^2
+   sum[ndx+1] += fh[i] * (d[i] - avg[ndx+1])^2
 endfor
 std = sqrt(sum/n)               ; standard deviation
 
