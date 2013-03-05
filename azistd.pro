@@ -121,20 +121,19 @@ if ngood gt 0 then begin
 endif
 
 for i = 0L, ngood-1 do begin	; loop through data points in range
-   ndx = ri[i]                  ; lower bin
-   sum[ndx] += dl[i]
-   n[ndx]   += fl[i]
-                                ; higher bin
-   sum[ndx+1] += dh[i]
+   ndx = ri[i]                  
+   sum[ndx]   += dl[i]          ; lower bin
+   n[ndx]     += fl[i]
+   sum[ndx+1] += dh[i]          ; upper bin
    n[ndx+1]   += fh[i]
 endfor
 avg = sum/n                     ; normalize by number in each bin
 
 sum *= 0                        ; reset sum for standard deviation
 for i = 0L, ngood-1 do begin    ; loop through data points in range
-   ndx = ri[i]                  ; lower bin
-   sum[ndx]   += fl[i] * (d[i] - avg[ndx]  )^2
-   sum[ndx+1] += fh[i] * (d[i] - avg[ndx+1])^2
+   ndx = ri[i]
+   sum[ndx]   += fl[i] * (d[i] - avg[ndx]  )^2 ; lower bin
+   sum[ndx+1] += fh[i] * (d[i] - avg[ndx+1])^2 ; upper bin
 endfor
 std = sqrt(sum/n)               ; standard deviation
 
