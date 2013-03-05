@@ -53,7 +53,8 @@
 ; 01/27/2009 DGG Added deinterlace keyword.  Documentation clean up.
 ; 01/27/2013 DGG Use rebin to calculate distance arrays.
 ;   Correctly handle deinterlace=0.  Added RAD keyword.
-; 03/04/2013 DGG Added COMPILE_OPT.
+; 03/04/2013 DGG Added COMPILE_OPT.  Fix corner cases when bins have
+;   no counts.
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -64,7 +65,7 @@ function azistd, _data, avg, $
 
 COMPILE_OPT IDL2
 
-on_error, 2			; return to calling routine on error
+;on_error, 2			; return to calling routine on error
 
 sz = size(_data)
 if sz[0] ne 2 then message, "Requires 2-dimensional data set"
@@ -127,6 +128,7 @@ for i = 0L, ngood-1 do begin	; loop through data points in range
    sum[ndx+1] += dh[i]          ; upper bin
    n[ndx+1]   += fh[i]
 endfor
+n[where(n le 0, /null)] = 1
 avg = sum/n                     ; normalize by number in each bin
 
 sum *= 0                        ; reset sum for standard deviation

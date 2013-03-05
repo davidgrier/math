@@ -56,6 +56,7 @@
 ;     Documentation upgrades.
 ; 07/17/2012 DGG Use rebin to calculate distance array.
 ; 01/24/2013 DGG do not deinterlace if deinterlace=0
+; 03/04/2013 DGG Fix corner case when bins have no counts.
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -67,7 +68,7 @@ function aziavg, _data, $
 
 COMPILE_OPT IDL2
 
-on_error, 2			; return to calling routine on error
+; on_error, 2			; return to calling routine on error
 
 if ~isa(_data, /number, /array) then begin
    message, 'USAGE: result = aziavg(data)', /inf
@@ -151,6 +152,7 @@ for i = 0L, ngood-1 do begin	; loop through data points in range
    sum[ndx+1] += dh[i]
    n[ndx+1]   += fh[i]
 endfor
+n[where(n le 0, /null)] = 1
 
 return, sum/n			; normalize by number in each bin
 end
