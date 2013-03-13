@@ -30,6 +30,7 @@
 ;
 ; MODIFICATION HISTORY:
 ; 09/18/2010 Written by David G. Grier, New York University
+; 03/13/2013 DGG usage message.
 ;
 ; Copyright (c) 2010 David G. Grier
 ;
@@ -37,10 +38,15 @@
 
 function iqr, data
 
+COMPILE_OPT IDL2
+
+umsg = 'USAGE: result = iqr(data)'
+
 ; only consider valid numerical data
 w = where(finite(data) eq 1, ndata)
 if ndata lt 1 then begin
-   message, "no finite data points", /inf
+   message, umsg, /inf
+   message, 'no finite data points', /inf
    return, 0.
 endif
 x = data[w]
