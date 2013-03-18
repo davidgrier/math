@@ -21,6 +21,8 @@ and derivative kernels.
     * **iqr**: Computes the inter-quartile range of a one-dimensional data set.
     * **sigmatrim**: Computes the average and standard deviation of a data
 set while ignoring contributions from outlying data points.
+    * **mad**: Estimate signal-to-noise ratio in a signal or image with
+the median absolute deviation from the median.
 3. **Kernel Density Estimation**
     * **kde**: Estimates the N-dimensional probability density underlying a set of
 discrete samples (measurements) using the kernel density estimator method.
