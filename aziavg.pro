@@ -57,6 +57,7 @@
 ; 07/17/2012 DGG Use rebin to calculate distance array.
 ; 01/24/2013 DGG do not deinterlace if deinterlace=0
 ; 03/04/2013 DGG Fix corner case when bins have no counts.
+; 03/17/2013 DGG updated usage message.
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -68,17 +69,18 @@ function aziavg, _data, $
 
 COMPILE_OPT IDL2
 
-; on_error, 2			; return to calling routine on error
+umsg = 'USAGE: result = aziavg(data)'
 
 if ~isa(_data, /number, /array) then begin
-   message, 'USAGE: result = aziavg(data)', /inf
-   message, 'data: must be an array of numbers', /inf
+   message, umsg, /inf
+   message, 'DATA must be a numeric array', /inf
    return, -1
 endif
 
 sz = size(_data)
 if sz[0] ne 2 then begin
-   message, 'Requires 2-dimensional data set', /inf
+   message, umsg, /inf
+   message, 'DATA must be a two-dimensional array', /inf
    return, -1
 endif
 nx = sz[1]			; width
@@ -132,11 +134,13 @@ fh = r - ri                     ; fraction in higher bin
 fl = 1.D - fh                   ; fraction in lower bin
 if arg_present(weight) then begin
    if ~isa(weight, /number) then begin
-      message, 'weight: must be a numerical data type', /inf
+      message, umsg, /inf
+      message, 'WEIGHT must be a numerical data type', /inf
       return, -1
    endif
    if n_elements(weight) ne nx*ny then begin
-      message, 'weight: must have same number of elements as data', /inf
+      message, umsg, /inf
+      message, 'WEIGHT must have same number of elements as DATA', /inf
       return, -1
    endif
    fh *= weight[w]
