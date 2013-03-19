@@ -55,7 +55,8 @@
 ;   Correctly handle deinterlace=0.  Added RAD keyword.
 ; 03/04/2013 DGG Added COMPILE_OPT.  Fix corner cases when bins have
 ;   no counts.
-; 03/17/2013 DGG Small speedup in accumulation loops.
+; 03/17/2013 DGG Small speedup in accumulation loops.  Updated usage
+;   message and error testing.
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -66,11 +67,19 @@ function azistd, _data, avg, $
 
 COMPILE_OPT IDL2
 
-;on_error, 2			; return to calling routine on error
+umsg = 'USAGE: result = azistd(data, [avg])'
 
+if ~isa(_data, /number, /array) then begin
+   message, umsg, /inf
+   message, 'DATA must be a numeric array', /inf
+   return, -1
+endif
 sz = size(_data)
-if sz[0] ne 2 then message, "Requires 2-dimensional data set"
-if (sz[3] lt 1) or (sz[3] gt 6) then message, "Inappropriate data type"
+if sz[0] ne 2 then begin
+   message, umsg, /inf
+   message, 'DATA must be two-dimensional', /inf
+   return, -1
+endif
 nx = sz[1]			; width
 ny = sz[2]			; height 
 
