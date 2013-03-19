@@ -57,7 +57,8 @@
 ; 07/17/2012 DGG Use rebin to calculate distance array.
 ; 01/24/2013 DGG do not deinterlace if deinterlace=0
 ; 03/04/2013 DGG Fix corner case when bins have no counts.
-; 03/17/2013 DGG updated usage message.
+; 03/17/2013 DGG updated usage message.  Small speed-up in
+;     accumulation loop.
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -115,8 +116,8 @@ r = rebin((dindgen(nx) - xc)^2, nx, ny) + $
 
 if keyword_set(deinterlace) then begin
    n0 = deinterlace mod 2
-   a = a[*,n0:*:2]
-   r = r[*,n0:*:2]
+   a = a[*, n0:*:2]
+   r = r[*, n0:*:2]
 endif
 
 ; limit average to maximum range
@@ -151,10 +152,11 @@ dl = dl * fl
 
 for i = 0L, ngood-1 do begin	; loop through data points in range
    ndx = ri[i]                  ; lower bin
-   sum[ndx]   += dl[i] 
-   n[ndx]     += fl[i]
-   sum[ndx+1] += dh[i]
-   n[ndx+1]   += fh[i]
+   sum[ndx] += dl[i] 
+   n[ndx]   += fl[i]
+   ndx++
+   sum[ndx] += dh[i]
+   n[ndx]   += fh[i]
 endfor
 n[where(n le 0, /null)] = 1
 

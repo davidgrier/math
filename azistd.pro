@@ -55,6 +55,7 @@
 ;   Correctly handle deinterlace=0.  Added RAD keyword.
 ; 03/04/2013 DGG Added COMPILE_OPT.  Fix corner cases when bins have
 ;   no counts.
+; 03/17/2013 DGG Small speedup in accumulation loops.
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -123,10 +124,11 @@ endif
 
 for i = 0L, ngood-1 do begin	; loop through data points in range
    ndx = ri[i]                  
-   sum[ndx]   += dl[i]          ; lower bin
-   n[ndx]     += fl[i]
-   sum[ndx+1] += dh[i]          ; upper bin
-   n[ndx+1]   += fh[i]
+   sum[ndx] += dl[i]          ; lower bin
+   n[ndx]   += fl[i]
+   ndx++
+   sum[ndx] += dh[i]          ; upper bin
+   n[ndx]   += fh[i]
 endfor
 n[where(n le 0, /null)] = 1
 avg = sum/n                     ; normalize by number in each bin
@@ -134,8 +136,9 @@ avg = sum/n                     ; normalize by number in each bin
 sum *= 0                        ; reset sum for standard deviation
 for i = 0L, ngood-1 do begin    ; loop through data points in range
    ndx = ri[i]
-   sum[ndx]   += fl[i] * (d[i] - avg[ndx]  )^2 ; lower bin
-   sum[ndx+1] += fh[i] * (d[i] - avg[ndx+1])^2 ; upper bin
+   sum[ndx] += fl[i] * (d[i] - avg[ndx])^2 ; lower bin
+   ndx++
+   sum[ndx] += fh[i] * (d[i] - avg[ndx])^2 ; upper bin
 endfor
 std = sqrt(sum/n)               ; standard deviation
 
