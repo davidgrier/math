@@ -74,8 +74,9 @@
 ; 12/09/2012 DGG replace # with rebin() in n-dimensional code for
 ;    efficiency and clarity.  Corrected n-dimensional normalization.
 ;    Upgraded usage messages.
+; 03/22/2013 DGG rebin(/sample) is more efficient.
 ;
-; Copyright (c) 2010-2012 David G. Grier
+; Copyright (c) 2010-2013 David G. Grier
 ;
 ;-
 
@@ -112,7 +113,7 @@ hfac = h # lambda               ; smoothing factor for each point
 eta = weight/((2.*!pi) * total(hfac^2, 1))^(nd/2.)/nx ; normalization
 
 for j = 0, ny - 1 do begin
-   z = 0.5 * total(((x - rebin(y[*,j], nd, nx))/hfac)^2 , 1)
+   z = 0.5 * total(((x - rebin(y[*,j], nd, nx, /sample))/hfac)^2 , 1)
    w = where(z lt 20, ngood)
    if ngood gt 0 then $
       res[j] = total(eta[w]*exp(-z[w]))

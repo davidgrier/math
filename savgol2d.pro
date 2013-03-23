@@ -76,7 +76,7 @@ endif
 
 npts = dim^2
 
-x = rebin(findgen(dim)-dim/2, dim, dim)
+x = rebin(findgen(dim)-dim/2, dim, dim, /sample)
 y = transpose(x)
 x = reform(x, npts)
 y = reform(y, npts)

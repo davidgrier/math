@@ -57,6 +57,7 @@
 ;   no counts.
 ; 03/17/2013 DGG Small speedup in accumulation loops.  Updated usage
 ;   message and error testing.
+; 03/22/2013 DGG rebin(/sample) is more efficient.
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -110,8 +111,8 @@ else $
   sum = dblarr(rmax + 1)
 n = dblarr(rmax + 1)
 
-r = rebin((dindgen(nx) - xc)^2, nx, ny) + $
-    rebin((dindgen(1, ny) - yc)^2, nx, ny)
+r = rebin((dindgen(nx) - xc)^2, nx, ny, /sample) + $
+    rebin((dindgen(1, ny) - yc)^2, nx, ny, /sample)
 
 if keyword_set(deinterlace) then begin
    n0 = deinterlace mod 2

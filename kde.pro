@@ -66,8 +66,9 @@
 ;    and clarity in n-dimensional code.  Test scale with
 ;    arg_present().  Move normalization out of loops for efficiency.
 ;    Corrected n-dimensional normalization.  Updated usage messages.
+; 03/22/2013 DGG rebin(/sample) is more efficient.
 ;
-; Copyright (c) 2010-2012 David G. Grier
+; Copyright (c) 2010-2013 David G. Grier
 ;-
 
 function kde_nd, x, y, $
@@ -103,10 +104,10 @@ if arg_present(scale) then scale =  h
 ; density estimate
 ; Silverman Eq. (2.15) and Table 3.1
 res = fltarr(ny)
-hfac = rebin(h, nd, nx)
+hfac = rebin(h, nd, nx, /sample)
 
 for j = 0, ny-1 do begin
-   z = 0.5 * total(((x - rebin(y[*,j], nd, nx)) / hfac)^2, 1)
+   z = 0.5 * total(((x - rebin(y[*,j], nd, nx, /sample)) / hfac)^2, 1)
    w = where(z lt 20, ngood)
    if ngood gt 0 then $
       res[j] = total(weight[w]*exp(-z[w]))

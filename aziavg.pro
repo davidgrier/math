@@ -59,6 +59,7 @@
 ; 03/04/2013 DGG Fix corner case when bins have no counts.
 ; 03/17/2013 DGG updated usage message.  Small speed-up in
 ;     accumulation loop.
+; 03/22/2013 DGG rebin(/sample) is more efficient.
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -111,8 +112,8 @@ endelse
 n = dblarr(rmax + 1)
 
 ; distance from center to each pixel
-r = rebin((dindgen(nx) - xc)^2, nx, ny) + $
-    rebin((dindgen(1, ny) - yc)^2, nx, ny)
+r = rebin((dindgen(nx) - xc)^2, nx, ny, /sample) + $
+    rebin((dindgen(1, ny) - yc)^2, nx, ny, /sample)
 
 if keyword_set(deinterlace) then begin
    n0 = deinterlace mod 2
