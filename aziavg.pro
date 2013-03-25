@@ -60,6 +60,7 @@
 ; 03/17/2013 DGG updated usage message.  Small speed-up in
 ;     accumulation loop.
 ; 03/22/2013 DGG rebin(/sample) is more efficient.
+; 03/24/2013 DGG small efficiency improvements.
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -145,8 +146,9 @@ if arg_present(weight) then begin
       message, 'WEIGHT must have same number of elements as DATA', /inf
       return, -1
    endif
-   fh *= weight[w]
-   fl *= weight[w]
+   wgt = weight[w]
+   fh *= wgt
+   fl *= wgt
 endif
 dh = dl * fh                    ; apportion fractions ...
 dl = dl * fl
@@ -159,7 +161,7 @@ for i = 0L, ngood-1 do begin	; loop through data points in range
    sum[ndx] += dh[i]
    n[ndx]   += fh[i]
 endfor
-n[where(n le 0, /null)] = 1
+n >= 1
 
 return, sum/n			; normalize by number in each bin
 end

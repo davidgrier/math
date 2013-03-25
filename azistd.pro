@@ -58,6 +58,7 @@
 ; 03/17/2013 DGG Small speedup in accumulation loops.  Updated usage
 ;   message and error testing.
 ; 03/22/2013 DGG rebin(/sample) is more efficient.
+; 03/24/2013 DGG small efficiency improvements.
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -140,7 +141,7 @@ for i = 0L, ngood-1 do begin	; loop through data points in range
    sum[ndx] += dh[i]          ; upper bin
    n[ndx]   += fh[i]
 endfor
-n[where(n le 0, /null)] = 1
+n >= 1
 avg = sum/n                     ; normalize by number in each bin
 
 sum *= 0                        ; reset sum for standard deviation
