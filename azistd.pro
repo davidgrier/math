@@ -114,7 +114,7 @@ r = rebin((dindgen(nx) - xc)^2, nx, ny, /sample) + $
 
 if keyword_set(deinterlace) then begin
    n0 = deinterlace mod 2
-   d = d[*, n0:*:2]
+   a = a[*, n0:*:2]
    r = r[*, n0:*:2]
 endif
 
