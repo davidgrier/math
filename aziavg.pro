@@ -105,7 +105,7 @@ else $
 
 if (sz[3] eq 6) or (sz[3] eq 9) then begin ; complex data
    a = dcomplex(_data)
-   sum = dcomplex(rmax+1)
+   sum = dcomplexarr(rmax+1)
 endif else begin                ; accumlate other types into double
    a = double(_data)
    sum = dblarr(rmax+1)
