@@ -59,6 +59,7 @@
 ;   message and error testing.
 ; 03/22/2013 DGG rebin(/sample) is more efficient.
 ; 03/24/2013 DGG small efficiency improvements.
+; 05/05/2013 DGG Use HISTOGRAM for calculation.  Major speed-up.
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -85,8 +86,6 @@ endif
 nx = sz[1]			; width
 ny = sz[2]			; height 
 
-complexdata = sz[3] eq 6
-
 ; center point
 if n_elements(center) eq 2 then begin
    xc = double(center[0])
@@ -96,21 +95,19 @@ endif else begin
    yc = 0.5D * double(ny - 1)	; ... in y also
 endelse
 
-if complexdata then $ 		; leave complex type alone
-   d = _data $
-else $
-   d = double(_data)
-
 if isa(rad, /number, /scalar) then $ ; maximum radius
    rmax = round(rad) $
 else $
    rmax = nx/2 < ny/2
 
-if complexdata then $
-  sum = complexarr(rmax + 1) $
-else $
-  sum = dblarr(rmax + 1)
-n = dblarr(rmax + 1)
+if (sz[3] eq 6) or (sz[3] eq 9) then begin ; complex data
+   a = dcomplex(_data)
+   sum = dcomplexarr(rmax+1)
+endif else begin                ; accumulate other types into double
+   a = double(_data)
+   sum = dblarr(rmax+1)
+endelse
+count = dblarr(rmax + 1)
 
 r = rebin((dindgen(nx) - xc)^2, nx, ny, /sample) + $
     rebin((dindgen(1, ny) - yc)^2, nx, ny, /sample)
@@ -121,37 +118,38 @@ if keyword_set(deinterlace) then begin
    r = r[*, n0:*:2]
 endif
 
-w = where(r lt rmax^2, ngood)
-
-if ngood gt 0 then begin
-   r = sqrt(r[w])               ; only consider data in range
-   d = d[w]
-   ri = long(r)                 ; integer index for r
-   fh = r - ri                  ; fraction in higher bin
-   fl = 1.D - fh		; fraction in lower bin
-   dh = d * fh                  ; apportion fractions
-   dl = d * fl
-endif
-
-for i = 0L, ngood-1 do begin	; loop through data points in range
-   ndx = ri[i]                  
-   sum[ndx] += dl[i]          ; lower bin
-   n[ndx]   += fl[i]
-   ndx++
-   sum[ndx] += dh[i]          ; upper bin
-   n[ndx]   += fh[i]
+r = sqrt(r)
+fh = r - floor(r)
+fl = 1.d - fh
+ah = a * fh
+al = a * fl
+h = histogram(r, min = 0, max = rmax+1, reverse_indices = n)
+for i = 0L, rmax-1 do begin
+   n0 = n[i]
+   n1 = n[i+1]-1
+   if (n1 ge n0) then begin
+      ndx = n[n0:n1]
+      sum[i] += total(al[ndx])
+      count[i] += total(fl[ndx])
+      sum[i+1] = total(ah[ndx])
+      count[i+1] = total(fh[ndx])
+   endif
 endfor
-n >= 1
-avg = sum/n                     ; normalize by number in each bin
+count >= 1.d
+avg = sum/count                 ; normalize by number in each bin
 
 sum *= 0                        ; reset sum for standard deviation
-for i = 0L, ngood-1 do begin    ; loop through data points in range
-   ndx = ri[i]
-   sum[ndx] += fl[i] * (d[i] - avg[ndx])^2 ; lower bin
-   ndx++
-   sum[ndx] += fh[i] * (d[i] - avg[ndx])^2 ; upper bin
+for i = 0L, rmax-1 do begin     ; loop through data points in range
+   n0 = n[i]
+   n1 = n[i+1]-1
+   if (n1 ge n0) then begin
+      ndx = n[n0:n1]
+      dsq = (a[ndx]-avg[i])^2
+      sum[i] += total(fl[ndx]*dsq)
+      sum[i+1] = total(fh[ndx]*dsq)
+   endif
 endfor
-std = sqrt(sum/n)               ; standard deviation
+std = sqrt(sum/count)               ; standard deviation
 
 return, std
 end
