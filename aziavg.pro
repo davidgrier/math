@@ -61,6 +61,7 @@
 ;     accumulation loop.
 ; 03/22/2013 DGG rebin(/sample) is more efficient.
 ; 03/24/2013 DGG small efficiency improvements.
+; 05/05/2013 DGG Use HISTOGRAM for computations.  Major speed-up.
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -104,13 +105,15 @@ else $
 
 if (sz[3] eq 6) or (sz[3] eq 9) then begin ; complex data
    a = dcomplex(_data)
-   sum = dcomplexarr(rmax + 1)
+   sum = dcomplex(rmax+1)
 endif else begin                ; accumlate other types into double
    a = double(_data)
-   sum = dblarr(rmax + 1)
+   sum = dblarr(rmax+1)
 endelse
+count = dblarr(rmax+1)
 
-n = dblarr(rmax + 1)
+if isa(weight, /number, /array) then $
+   a *= weight
 
 ; distance from center to each pixel
 r = rebin((dindgen(nx) - xc)^2, nx, ny, /sample) + $
@@ -122,46 +125,23 @@ if keyword_set(deinterlace) then begin
    r = r[*, n0:*:2]
 endif
 
-; limit average to maximum range
-w = where(r lt rmax^2, ngood)
-if ngood lt 0 then $
-   return, -1                   ; no pixels in average
-
-r = sqrt(r[w])                  ; only consider data in range
-dl = a[w]                       ; data in range
-
-; apportion data proportionally into radius bins above and below 
-; target radius
-ri = long(r)                    ; integer index for r
-fh = r - ri                     ; fraction in higher bin
-fl = 1.D - fh                   ; fraction in lower bin
-if arg_present(weight) then begin
-   if ~isa(weight, /number) then begin
-      message, umsg, /inf
-      message, 'WEIGHT must be a numerical data type', /inf
-      return, -1
+r = sqrt(r)
+fh = r - floor(r)
+fl = 1.d - fh
+ah = a * fh
+al = a * fl
+h = histogram(r, min = 0, max = rmax+1, reverse_indices = n)
+for i = 0L, rmax-1 do begin
+   n0 = n[i]
+   n1 = n[i+1]-1
+   if (n1 ge n0) then begin
+      ndx = n[n0:n1]
+      sum[i] += total(al[ndx])
+      count[i] += total(fl[ndx])
+      sum[i+1] = total(ah[ndx])
+      count[i+1] = total(fh[ndx])
    endif
-   if n_elements(weight) ne nx*ny then begin
-      message, umsg, /inf
-      message, 'WEIGHT must have same number of elements as DATA', /inf
-      return, -1
-   endif
-   wgt = weight[w]
-   fh *= wgt
-   fl *= wgt
-endif
-dh = dl * fh                    ; apportion fractions ...
-dl = dl * fl
-
-for i = 0L, ngood-1 do begin	; loop through data points in range
-   ndx = ri[i]                  ; lower bin
-   sum[ndx] += dl[i] 
-   n[ndx]   += fl[i]
-   ndx++
-   sum[ndx] += dh[i]
-   n[ndx]   += fh[i]
 endfor
-n >= 1
 
-return, sum/n			; normalize by number in each bin
+return, sum/(count > 1.d)
 end
