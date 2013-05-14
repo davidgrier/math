@@ -17,25 +17,24 @@
 ; OPTIONAL INPUTS:
 ;    x: coordinates of signal: s = s(x)
 ;
-; KEYWORD FLAGS:
-;    rising: If set, return coordinates of rising zero crossings
-;    falling: If set, return coordinates of falling zero crossings
-;        Default: Return all zero crossings.
-;
 ; OUTPUTS:
 ;    xc: coordinates of zero crossings.  If x is not specified, the
 ;        signal is assumed to be evenly sampled at unit intervals.
+;
+; KEYWORD OUTPUTS:
+;    rising: 1 for rising zero-crossings, 0 for falling.
 ;
 ; EXAMPLE:
 ;    IDL> xc = zerocrossings(sin(findgen(100)))
 ;
 ; MODIFICATION HISTORY:
 ; 05/14/2013 Written by David G. Grier, New York University
+;    Use RISING as a set of flags on output.
 ;
 ; Copyright (c) 2013 David G. Grier
 ;-
 
-function zerocrossings, arg1, arg2, rising = rising, falling = falling
+function zerocrossings, arg1, arg2, rising = rising
 
 COMPILE_OPT IDL2
 
@@ -57,19 +56,8 @@ endelse
 y1 = s[w]
 y2 = s[w+1]
 
-if keyword_set(rising) then begin
-   w = where(y1 lt y2, nrising)
-   if nrising le 0 then $
-      return, []
-   return, (y2[w]*x1[w] - y1[w]*x2[w])/(y2[w] - y1[w])
-endif
-
-if keyword_set(falling) then begin
-   w = where(y1 gt y2, nfalling)
-   if nfalling le 0 then $
-      return, []
-   return, (y1[w]*x2[w] - y2[w]*x1[w])/(y1[w] - y2[w])
-endif
+if arg_present(rising) then $
+   rising = y2 gt y1
 
 y1 = abs(temporary(y1))
 y2 = abs(temporary(y2))
