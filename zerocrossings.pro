@@ -29,7 +29,7 @@
 ;
 ; MODIFICATION HISTORY:
 ; 05/14/2013 Written by David G. Grier, New York University
-;    Use RISING as a set of flags on output.
+;    Use RISING as a set of flags on output.  Eliminate FALLING.
 ;
 ; Copyright (c) 2013 David G. Grier
 ;-
