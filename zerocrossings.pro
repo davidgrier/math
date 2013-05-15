@@ -23,18 +23,20 @@
 ;
 ; KEYWORD OUTPUTS:
 ;    rising: 1 for rising zero-crossings, 0 for falling.
+;    falling: opposite of rising.
 ;
 ; EXAMPLE:
 ;    IDL> xc = zerocrossings(sin(findgen(100)))
 ;
 ; MODIFICATION HISTORY:
 ; 05/14/2013 Written by David G. Grier, New York University
-;    Use RISING as a set of flags on output.  Eliminate FALLING.
+;    Use RISING as a set of flags on output.
+; 05/15/2013 DGG Added FALLING keyword.
 ;
 ; Copyright (c) 2013 David G. Grier
 ;-
 
-function zerocrossings, arg1, arg2, rising = rising
+function zerocrossings, arg1, arg2, rising = rising, falling = falling
 
 COMPILE_OPT IDL2
 
@@ -58,6 +60,9 @@ y2 = s[w+1]
 
 if arg_present(rising) then $
    rising = y2 gt y1
+
+if arg_present(falling) then $
+   falling = y2 lt y1
 
 y1 = abs(temporary(y1))
 y2 = abs(temporary(y2))
