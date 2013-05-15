@@ -17,6 +17,10 @@ a two-dimensional data set, averaged over angles, as a function of
 radial distance from the center.
     * **savgol2D**: Generates two-dimensional Savitzky-Golay smoothing
 and derivative kernels.
+    * **zerocrossings**: Computes the coordinates of the zero crossings
+of a function.
+    * **extrema**: Computes the coordinates and values of the local
+extrema of a function.
 2. **Statistics**
     * **iqr**: Computes the inter-quartile range of a one-dimensional data set.
     * **sigmatrim**: Computes the average and standard deviation of a data
