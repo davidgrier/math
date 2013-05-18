@@ -24,6 +24,7 @@
 ;    values: value of signal at extrema: s(xm)
 ;
 ;    ismax: 1 if extremum is maximum, 0 otherwise
+;    ismin: 0 if extremum is minimum, 1 otherwise
 ;
 ; KEYWORD FLAGS:
 ;    maxima: If set, only return maxima 
@@ -39,6 +40,7 @@
 ; MODIFICATION HISTORY:
 ; 05/14/2013 Written by David G. Grier, New York University
 ; 05/15/2013 DGG Added ISMAX keyword.
+; 05/18/2013 DGG Added ISMIN keyword
 ;
 ; Copyright (c) 2013 David G. Grier
 ;-
@@ -46,7 +48,8 @@ function extrema, arg1, arg2, $
                   maxima = maxima, $
                   minima = minima, $
                   values = values, $
-                  ismax = ismax
+                  ismax = ismax, $
+                  ismin = ismin
 
 COMPILE_OPT IDL2
 
@@ -54,11 +57,12 @@ s = (n_params() eq 1) ? arg1 : arg2
 ds = deriv(s)
 
 nc = zerocrossings(ds, falling = ismax)
+ismin = ~ismax
 
 if keyword_set(maxima) then $
    nc = nc[where(ismax)] $
 else if keyword_set(minima) then $
-   nc = nc[where(~ismax)]
+   nc = nc[where(ismin)]
 
 n = floor(nc)
 
