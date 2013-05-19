@@ -62,6 +62,7 @@
 ; 03/22/2013 DGG rebin(/sample) is more efficient.
 ; 03/24/2013 DGG small efficiency improvements.
 ; 05/05/2013 DGG Use HISTOGRAM for computations.  Major speed-up.
+; 05/19/2013 DGG # is faster than rebin(/sample)
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -116,8 +117,8 @@ if isa(weight, /number, /array) then $
    a *= weight
 
 ; distance from center to each pixel
-r = rebin((dindgen(nx) - xc)^2, nx, ny, /sample) + $
-    rebin((dindgen(1, ny) - yc)^2, nx, ny, /sample)
+r = (dindgen(nx) - xc)^2 # replicate(1., ny) + $
+    replicate(1., nx) # (dindgen(ny) - yc)^2
 
 if keyword_set(deinterlace) then begin
    n0 = deinterlace mod 2
