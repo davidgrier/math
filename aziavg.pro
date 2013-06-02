@@ -30,12 +30,17 @@
 ;
 ; OUTPUTS:
 ;    result: data averaged over angles as a function of radius from
-;        the center point, measured in pixels.  Result is single precision.
+;        the center point, measured in pixels.  Result is single
+;        precision.
+;
+; KEYWORD OUTPUTS:
+;    rho: the radial position of each pixel in DATA relative to the
+;        center at (xc,yc).
 ;
 ; PROCEDURE:
-;    data[x,y] sits at radius r = sqrt((x-xc)^2 + (y-yc)^2) 
+;    data[x,y] sits at radius rrho = sqrt((x-xc)^2 + (y-yc)^2) 
 ;        from the center, (xc,yc).  Let R be the integer part
-;        of r, and dR the fractional part.  Then this point is
+;        of rho, and dR the fractional part.  Then this point is
 ;        averaged into result(R) with a weight 1-dR and into
 ;        result(R+1) with a weight dR.
 ;
@@ -63,6 +68,7 @@
 ; 03/24/2013 DGG small efficiency improvements.
 ; 05/05/2013 DGG Use HISTOGRAM for computations.  Major speed-up.
 ; 05/19/2013 DGG # is faster than rebin(/sample)
+; 06/02/2013 DGG Added RHO keyword.
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -70,7 +76,8 @@ function aziavg, _data, $
                  center = center, $
                  rad = rad, $
                  weight = weight, $
-                 deinterlace = deinterlace
+                 deinterlace = deinterlace, $
+                 rho = rho
 
 COMPILE_OPT IDL2
 
@@ -117,17 +124,16 @@ if isa(weight, /number, /array) then $
    a *= weight
 
 ; distance from center to each pixel
-r = (dindgen(nx) - xc)^2 # replicate(1., ny) + $
-    replicate(1., nx) # (dindgen(ny) - yc)^2
-
+rho = (dindgen(nx) - xc)^2 # replicate(1., ny) + $
+      replicate(1., nx) # (dindgen(ny) - yc)^2
 if keyword_set(deinterlace) then begin
    n0 = deinterlace mod 2
    a = a[*, n0:*:2]
-   r = r[*, n0:*:2]
+   rho = rho[*, n0:*:2]
 endif
 
-r = sqrt(r)
-fh = r - floor(r)
+rho = sqrt(rho)
+fh = rho - floor(rho)
 fl = 1.d - fh
 ah = a * fh
 al = a * fl
