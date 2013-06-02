@@ -32,13 +32,15 @@
 ;        function of radius from the center point, measured in pixels.  
 ;        Result is single precision.
 ;
-; OPTIONAL OUTPUT:
+; OPTIONAL OUTPUTS:
 ;    avg : azimuthal average of the data
 ;
+;    rho: distance of each pixel in DATA from center at (xc,yc).
+;
 ; PROCEDURE:
-;    data(x,y) sits at radius r = sqrt( (x-xc)^2 + (y-yc)^2 ) 
+;    data(x,y) sits at radius rho = sqrt( (x-xc)^2 + (y-yc)^2 ) 
 ;    from the center, (xc,yc).  Let R be the integer part
-;    of r, and dR the fractional part.  Then this point is
+;    of rho, and dR the fractional part.  Then this point is
 ;    averaged into result(R) with a weight 1-dR and into
 ;    result(R+1) with a weight dR.
 ;
@@ -61,6 +63,7 @@
 ; 03/24/2013 DGG small efficiency improvements.
 ; 05/05/2013 DGG Use HISTOGRAM for calculation.  Major speed-up.
 ; 05/19/2013 DGG # is faster than rebin(/sample).
+; 06/02/2013 DGG Added RHO keyword.
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -110,17 +113,17 @@ endif else begin                ; accumulate other types into double
 endelse
 count = dblarr(rmax + 1)
 
-r = (dindgen(nx) - xc)^2 # replicate(1., ny) + $
-    replicate(1., nx) # (dindgen(1, ny) - yc)^2
+rrho = (dindgen(nx) - xc)^2 # replicate(1., ny) + $
+       replicate(1., nx) # (dindgen(1, ny) - yc)^2
 
 if keyword_set(deinterlace) then begin
    n0 = deinterlace mod 2
    a = a[*, n0:*:2]
-   r = r[*, n0:*:2]
+   rho = rho[*, n0:*:2]
 endif
 
-r = sqrt(r)
-fh = r - floor(r)
+rho = sqrt(rho)
+fh = rho - floor(rho)
 fl = 1.d - fh
 ah = a * fh
 al = a * fl
@@ -154,8 +157,3 @@ std = sqrt(sum/count)               ; standard deviation
 
 return, std
 end
-
-
-
-
-
