@@ -71,7 +71,8 @@
 ; 03/24/2013 DGG small efficiency improvements.
 ; 05/05/2013 DGG Use HISTOGRAM for computations.  Major speed-up.
 ; 05/19/2013 DGG # is faster than rebin(/sample)
-; 06/02/2013 DGG Added RHO keyword.  Added DEVIATES keyword.
+; 06/02/2013 DGG Added RHO keyword.  Added DEVIATES keyword.  Return
+;   deviates for all points, even when called with deinterlace
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -130,14 +131,16 @@ if isa(weight, /number, /array) then $
 ; distance from center to each pixel
 rho = (dindgen(nx) - xc)^2 # replicate(1., ny) + $
       replicate(1., nx) # (dindgen(ny) - yc)^2
+rho = sqrt(temporary(rho))
+
 if keyword_set(deinterlace) then begin
    n0 = deinterlace mod 2
    a = a[*, n0:*:2]
-   rho = rho[*, n0:*:2]
-endif
+   fh = rho[*, n0:*:2]
+endif else $
+   fh = rho
 
-rho = sqrt(rho)
-fh = rho - floor(rho)
+fh -= floor(temporary(fh))
 fl = 1.d - fh
 ah = a * fh
 al = a * fl
@@ -157,7 +160,7 @@ endfor
 avg = sum/(count > 1.d)
 
 if arg_present(deviates) then $
-   deviates = a - avg[round(rho)]
+   deviates = _data - avg[round(rho)]
 
 return, avg
 end
