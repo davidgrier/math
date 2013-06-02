@@ -129,18 +129,18 @@ if isa(weight, /number, /array) then $
    a *= weight
 
 ; distance from center to each pixel
-rho = (dindgen(nx) - xc)^2 # replicate(1., ny) + $
+r = (dindgen(nx) - xc)^2 # replicate(1., ny) + $
       replicate(1., nx) # (dindgen(ny) - yc)^2
-rho = sqrt(temporary(rho))
+r = sqrt(temporary(r))
 
 if keyword_set(deinterlace) then begin
    n0 = deinterlace mod 2
    a = a[*, n0:*:2]
-   fh = rho[*, n0:*:2]
+   rho = r[*, n0:*:2]
 endif else $
-   fh = rho
+   rho = r
 
-fh -= floor(temporary(fh))
+fh = rho - floor(rho)
 fl = 1.d - fh
 ah = a * fh
 al = a * fl
@@ -160,7 +160,7 @@ endfor
 avg = sum/(count > 1.d)
 
 if arg_present(deviates) then $
-   deviates = _data - avg[round(rho)]
+   deviates = _data - avg[round(r)]
 
 return, avg
 end
