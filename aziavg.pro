@@ -141,7 +141,7 @@ fh = rho - floor(rho)
 fl = 1.d - fh
 ah = a * fh
 al = a * fl
-h = histogram(r, min = 0, max = rmax+1, reverse_indices = n)
+h = histogram(rho, min = 0, max = rmax+1, reverse_indices = n)
 for i = 0L, rmax-1 do begin
    n0 = n[i]
    n1 = n[i+1]-1
