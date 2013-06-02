@@ -37,6 +37,9 @@
 ;    rho: the radial position of each pixel in DATA relative to the
 ;        center at (xc,yc).
 ;
+;    deviates: difference between DATA and azimuthal average at each
+;        pixel.
+;
 ; PROCEDURE:
 ;    data[x,y] sits at radius rrho = sqrt((x-xc)^2 + (y-yc)^2) 
 ;        from the center, (xc,yc).  Let R be the integer part
@@ -68,7 +71,7 @@
 ; 03/24/2013 DGG small efficiency improvements.
 ; 05/05/2013 DGG Use HISTOGRAM for computations.  Major speed-up.
 ; 05/19/2013 DGG # is faster than rebin(/sample)
-; 06/02/2013 DGG Added RHO keyword.
+; 06/02/2013 DGG Added RHO keyword.  Added DEVIATES keyword.
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -77,7 +80,8 @@ function aziavg, _data, $
                  rad = rad, $
                  weight = weight, $
                  deinterlace = deinterlace, $
-                 rho = rho
+                 rho = rho, $
+                 deviates = deviates
 
 COMPILE_OPT IDL2
 
@@ -150,5 +154,10 @@ for i = 0L, rmax-1 do begin
    endif
 endfor
 
-return, sum/(count > 1.d)
+avg = sum/(count > 1.d)
+
+if arg_present(deviates) then $
+   deviates = a - avg[round(rho)]
+
+return, avg
 end
