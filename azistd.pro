@@ -64,12 +64,14 @@
 ; 05/05/2013 DGG Use HISTOGRAM for calculation.  Major speed-up.
 ; 05/19/2013 DGG # is faster than rebin(/sample).
 ; 06/02/2013 DGG Added RHO keyword.
+; 07/24/2013 DGG Fix critical typo
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
 function azistd, _data, avg, $
                  center = center, $
                  rad = rad, $
+                 rho = rho, $
                  deinterlace = deinterlace
 
 COMPILE_OPT IDL2
@@ -113,8 +115,8 @@ endif else begin                ; accumulate other types into double
 endelse
 count = dblarr(rmax + 1)
 
-rrho = (dindgen(nx) - xc)^2 # replicate(1., ny) + $
-       replicate(1., nx) # (dindgen(1, ny) - yc)^2
+rho = (dindgen(nx) - xc)^2 # replicate(1., ny) + $
+      replicate(1., nx) # (dindgen(1, ny) - yc)^2
 
 if keyword_set(deinterlace) then begin
    n0 = deinterlace mod 2
