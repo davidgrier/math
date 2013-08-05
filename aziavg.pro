@@ -73,6 +73,7 @@
 ; 05/19/2013 DGG # is faster than rebin(/sample)
 ; 06/02/2013 DGG Added RHO keyword.  Added DEVIATES keyword.  Return
 ;   deviates for all points, even when called with deinterlace
+; 08/05/2013 DGG fix average for small r when deinterlacing
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -111,10 +112,7 @@ endif else begin
    yc = 0.5D * double(ny - 1)   ; ... in y also
 endelse
 
-if isa(rad, /number, /scalar) then $ ; maximum radius
-   rmax = round(rad) $
-else $
-   rmax = nx/2 < ny/2
+rmax = isa(rad, /number, /scalar) ? round(rad) : (nx/2 < ny/2)
 
 if (sz[3] eq 6) or (sz[3] eq 9) then begin ; complex data
    a = dcomplex(_data)
@@ -157,7 +155,7 @@ for i = 0L, rmax-1 do begin
    endif
 endfor
 
-avg = sum/(count > 1.d)
+avg = sum/(count > 1e-3)
 
 if arg_present(deviates) then $
    deviates = _data - avg[round(r)]

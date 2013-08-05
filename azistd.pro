@@ -65,6 +65,7 @@
 ; 05/19/2013 DGG # is faster than rebin(/sample).
 ; 06/02/2013 DGG Added RHO keyword.
 ; 07/24/2013 DGG Fix critical typo
+; 08/25/2013 DGG Fix average for small r when deinterlacing
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -141,7 +142,7 @@ for i = 0L, rmax-1 do begin
       count[i+1] = total(fh[ndx])
    endif
 endfor
-count >= 1.d
+count >= 1.e-3
 avg = sum/count                 ; normalize by number in each bin
 
 sum *= 0                        ; reset sum for standard deviation
