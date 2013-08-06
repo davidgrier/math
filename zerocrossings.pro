@@ -32,7 +32,7 @@
 ; 05/14/2013 Written by David G. Grier, New York University
 ;    Use RISING as a set of flags on output.
 ; 05/15/2013 DGG Added FALLING keyword.
-; 08/06/2013 DGG Set rising and falling to zero if no crossings
+; 08/06/2013 DGG Set rising and falling to zero if no crossings.
 ;
 ; Copyright (c) 2013 David G. Grier
 ;-
@@ -67,8 +67,6 @@ if arg_present(rising) then $
 
 if arg_present(falling) then $
    falling = y2 lt y1
-
-help, falling
 
 y1 = abs(temporary(y1))
 y2 = abs(temporary(y2))
