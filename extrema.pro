@@ -49,20 +49,27 @@ function extrema, arg1, arg2, $
                   minima = minima, $
                   values = values, $
                   ismax = ismax, $
-                  ismin = ismin
+                  ismin = ismin, $
+                  count = count
 
 COMPILE_OPT IDL2
 
 s = (n_params() eq 1) ? arg1 : arg2
 ds = deriv(s)
 
-nc = zerocrossings(ds, falling = ismax)
+nc = zerocrossings(ds, falling = ismax, count = count)
 ismin = ~ismax
 
+if count le 0 then $
+   return, []
+
 if keyword_set(maxima) then $
-   nc = nc[where(ismax)] $
+   nc = nc[where(ismax, count, /NULL)] $
 else if keyword_set(minima) then $
-   nc = nc[where(ismin)]
+   nc = nc[where(ismin, count, /NULL)]
+
+if count le 0 then $
+   return, []
 
 n = floor(nc)
 
