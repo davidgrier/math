@@ -32,6 +32,7 @@
 ; 05/14/2013 Written by David G. Grier, New York University
 ;    Use RISING as a set of flags on output.
 ; 05/15/2013 DGG Added FALLING keyword.
+; 08/06/2013 DGG Set rising and falling to zero if no crossings
 ;
 ; Copyright (c) 2013 David G. Grier
 ;-
@@ -44,8 +45,11 @@ s = (n_params() eq 1) ? arg1 : arg2
 a = s gt 0.
 
 w = where(a[1:*] ne a, ncrossings)
-if ncrossings le 0 then $
+if ncrossings le 0 then begin
+   rising = 0
+   falling = 0
    return, []
+endif
 
 if n_params() eq 1 then begin
    x1 = w
@@ -63,6 +67,8 @@ if arg_present(rising) then $
 
 if arg_present(falling) then $
    falling = y2 lt y1
+
+help, falling
 
 y1 = abs(temporary(y1))
 y2 = abs(temporary(y2))
