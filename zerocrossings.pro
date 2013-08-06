@@ -22,6 +22,7 @@
 ;        signal is assumed to be evenly sampled at unit intervals.
 ;
 ; KEYWORD OUTPUTS:
+;    count: Number of zero-crossings in signal.
 ;    rising: 1 for rising zero-crossings, 0 for falling.
 ;    falling: opposite of rising.
 ;
@@ -33,19 +34,23 @@
 ;    Use RISING as a set of flags on output.
 ; 05/15/2013 DGG Added FALLING keyword.
 ; 08/06/2013 DGG Set rising and falling to zero if no crossings.
+;    Added COUNT keyword.
 ;
 ; Copyright (c) 2013 David G. Grier
 ;-
 
-function zerocrossings, arg1, arg2, rising = rising, falling = falling
+function zerocrossings, arg1, arg2, $
+                        rising = rising, $
+                        falling = falling, $
+                        count = count
 
 COMPILE_OPT IDL2
 
 s = (n_params() eq 1) ? arg1 : arg2
 a = s gt 0.
 
-w = where(a[1:*] ne a, ncrossings)
-if ncrossings le 0 then begin
+w = where(a[1:*] ne a, count)
+if count le 0 then begin
    rising = 0
    falling = 0
    return, []
