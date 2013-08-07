@@ -33,6 +33,7 @@
 ; Written by David G. Grier, AT&T Bell Laboratories, 1/92
 ; 03/17/2013 DGG New York University Formatting, code clean-up and
 ;   usage message.
+; 08/07/2013 DGG test for non-convergence.
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -61,6 +62,10 @@ repeat begin
       signal = where(data lt mean + lim, nsignal) $
    else $
       signal = where((data gt mean - lim) and (data lt mean + lim), nsignal)
+   if nsignal lt 1 then begin
+      message, 'did not converge', /inf
+      break
+   endif
    dev = stdev(data[signal], mean)
 end until(osignal eq nsignal)
 end	
