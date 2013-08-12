@@ -32,10 +32,14 @@
 ;        function of radius from the center point, measured in pixels.  
 ;        Result is single precision.
 ;
-; OPTIONAL OUTPUTS:
-;    avg : azimuthal average of the data
+; KEYWORD OUTPUTS:
+;    avg: azimuthal average of the data.
 ;
-;    rho: distance of each pixel in DATA from center at (xc,yc).
+;    rho: the radial position of each pixel in DATA relative to the
+;        center at (xc,yc).
+;
+;    deviates: difference between DATA and azimuthal average at each
+;        pixel.
 ;
 ; PROCEDURE:
 ;    data(x,y) sits at radius rho = sqrt( (x-xc)^2 + (y-yc)^2 ) 
@@ -65,7 +69,8 @@
 ; 05/19/2013 DGG # is faster than rebin(/sample).
 ; 06/02/2013 DGG Added RHO keyword.
 ; 07/24/2013 DGG Fix critical typo
-; 08/25/2013 DGG Fix average for small r when deinterlacing
+; 08/05/2013 DGG Fix average for small r when deinterlacing
+; 08/12/2013 DGG added DEVIATES
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -73,7 +78,8 @@ function azistd, _data, avg, $
                  center = center, $
                  rad = rad, $
                  rho = rho, $
-                 deinterlace = deinterlace
+                 deinterlace = deinterlace, $
+                 deviates = deviates
 
 COMPILE_OPT IDL2
 
@@ -116,14 +122,15 @@ endif else begin                ; accumulate other types into double
 endelse
 count = dblarr(rmax + 1)
 
-rho = (dindgen(nx) - xc)^2 # replicate(1., ny) + $
-      replicate(1., nx) # (dindgen(1, ny) - yc)^2
+r = (dindgen(nx) - xc)^2 # replicate(1., ny) + $
+    replicate(1., nx) # (dindgen(1, ny) - yc)^2
 
 if keyword_set(deinterlace) then begin
    n0 = deinterlace mod 2
    a = a[*, n0:*:2]
-   rho = rho[*, n0:*:2]
-endif
+   rho = r[*, n0:*:2]
+endif else $
+   rho = r
 
 rho = sqrt(rho)
 fh = rho - floor(rho)
@@ -157,6 +164,9 @@ for i = 0L, rmax-1 do begin     ; loop through data points in range
    endif
 endfor
 std = sqrt(sum/count)               ; standard deviation
+
+if arg_present(deviates) then $
+   deviates = _data - avg[round(r)]
 
 return, std
 end
