@@ -33,7 +33,7 @@
 ;        Result is single precision.
 ;
 ; KEYWORD OUTPUTS:
-;    avg: azimuthal average of the data.
+;    average: azimuthal average of the data.
 ;
 ;    rho: the radial position of each pixel in DATA relative to the
 ;        center at (xc,yc).

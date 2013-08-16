@@ -79,7 +79,7 @@ if arg_present(values) then begin
    else if keyword_set(minima) then $
       values = s[n] < s[n+1] $
    else $
-      values = (s[n] > s[n+1]) * (1. - rising) + (s[n] < s[n-1]) * rising
+      values = (s[n] > s[n+1]) * ismax + (s[n] < s[n-1]) * (1 - ismax)
 endif
 
 if n_params() eq 2 then begin
