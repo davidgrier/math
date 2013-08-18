@@ -15,7 +15,7 @@ These routines are licensed under the GPLv3.
     * **azistd**: Computes the standard deviation relative to the mean of
 a two-dimensional data set, averaged over angles, as a function of
 radial distance from a specified center.
-    * **azimed**: Computes the median over angles, as a function of
+    * **azimedian**: Computes the median over angles, as a function of
 radial distance from a specified center.
     * **savgol2D**: Generates two-dimensional Savitzky-Golay smoothing
 and derivative kernels.
