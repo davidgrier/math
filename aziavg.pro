@@ -9,7 +9,7 @@
 ;    Image Processing
 ;
 ; CALLING SEQUENCE:
-;    result = aziavg( data )
+;    result = aziavg(data)
 ;
 ; INPUTS:
 ;    data: two dimensional array of any type except string or complex
@@ -36,6 +36,8 @@
 ; KEYWORD OUTPUTS:
 ;    rho: the radial position of each pixel in DATA relative to the
 ;        center at (xc,yc).
+;
+;    values: Azimuthal average at each pixel.
 ;
 ;    deviates: difference between DATA and azimuthal average at each
 ;        pixel.
@@ -74,6 +76,7 @@
 ; 06/02/2013 DGG Added RHO keyword.  Added DEVIATES keyword.  Return
 ;   deviates for all points, even when called with deinterlace
 ; 08/05/2013 DGG fix average for small r when deinterlacing
+; 08/18/2013 DGG added VALUES keyword
 ;
 ; Copyright (c) 1992-2013 David G. Grier
 ;-
@@ -83,7 +86,8 @@ function aziavg, _data, $
                  weight = weight, $
                  deinterlace = deinterlace, $
                  rho = rho, $
-                 deviates = deviates
+                 deviates = deviates, $
+                 values = values
 
 COMPILE_OPT IDL2
 
@@ -156,6 +160,9 @@ for i = 0L, rmax-1 do begin
 endfor
 
 avg = sum/(count > 1e-3)
+
+if arg_present(values) then $
+   values = avg[round(r)]
 
 if arg_present(deviates) then $
    deviates = _data - avg[round(r)]
