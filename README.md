@@ -1,7 +1,7 @@
 # IDL math
 
-**IDL routines for performing calculating functions and
-performing mathematical operations**
+**IDL routines for computing special functions, analyzing
+signals and performing mathematical operations**
 
 IDL is the Interactive Data Language, and is a product of
 [Exelis Visual Information Solutions](http://www.exelisvis.com).
