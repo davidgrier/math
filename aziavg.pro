@@ -138,15 +138,15 @@ r = sqrt(temporary(r))
 if keyword_set(deinterlace) then begin
    n0 = deinterlace mod 2
    a = a[*, n0:*:2]
-   rho = r[*, n0:*:2]
-endif else $
-   rho = r
+   r = r[*, n0:*:2]
+endif
 
-fh = rho - floor(rho)
+rn = floor(r)
+fh = r - rn
 fl = 1.d - fh
 ah = a * fh
 al = a * fl
-h = histogram(rho, min = 0, max = rmax+1, reverse_indices = n)
+h = histogram(r, min = 0, max = rmax+1, reverse_indices = n)
 for i = 0L, rmax-1 do begin
    n0 = n[i]
    n1 = n[i+1]-1
@@ -161,11 +161,11 @@ endfor
 
 avg = sum/(count > 1e-3)
 
-if arg_present(values) then $
-   values = avg[round(r)]
-
-if arg_present(deviates) then $
-   deviates = _data - (arg_present(values) ? values : avg[round(r)])
+if arg_present(values) or arg_present(deviates) then begin
+   values = fl*avg[rn] + fh*avg[rn+1]
+   if arg_present(deviates) then $
+      deviates = a - values
+endif
 
 return, avg
 end

@@ -55,7 +55,8 @@
 ;
 ; MODIFICATION HISTORY:
 ; 08/18/13 Written by David G. Grier, New York University
-; 09/14/13 DGG Compute value at largest radius.
+; 09/14/13 DGG Compute value at largest radius.  Apportion
+;    values and deviates proportionately.
 ;
 ; Copyright (c) 2013 David G. Grier
 ;-
@@ -98,7 +99,7 @@ rmax = isa(rad, /number, /scalar) ? round(rad) : (nx/2 < ny/2)
 
 if (sz[3] eq 6) or (sz[3] eq 9) then begin ; complex data
    med = dcomplexarr(rmax+1)
-endif else begin                ; accumlate other types into double
+endif else begin                ; accumulate other types into double
    med = dblarr(rmax+1)
 endelse
 
@@ -112,24 +113,27 @@ r = sqrt(temporary(r))
 
 if keyword_set(deinterlace) then begin
    n0 = deinterlace mod 2
-   a = a[*, n0:*:2]
-   rho = r[*, n0:*:2]
+   b = a[*, n0:*:2]
+   r = r[*, n0:*:2]
 endif else $
-   rho = r
+   b = a
 
-h = histogram(rho, min = 0, max = rmax+1, reverse_indices = n)
+h = histogram(r, min = 0, max = rmax+1, reverse_indices = n)
 for i = 0L, rmax do begin
    n0 = n[i]
    n1 = n[i+1]-1
    if (n1 ge n0) then $
-      med[i] = median(a[n[n0:n1]])
+      med[i] = median(b[n[n0:n1]])
 endfor
 
-if arg_present(values) then $
-   values = med[round(r)]
-
-if arg_present(deviates) then $
-   deviates = a - (arg_present(values) ? values : med[round(r)])
+if arg_present(values) or arg_present(deviates) then begin
+   rn = floor(r)
+   fh = r - rn
+   fl = 1. - fh
+   values = fl*med[rn] + fh*med[rn+1]
+   if arg_present(deviates) then $
+      deviates = b - values
+endif
 
 return, med
 end
