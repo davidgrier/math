@@ -129,7 +129,7 @@ if arg_present(values) then $
    values = med[round(r)]
 
 if arg_present(deviates) then $
-   deviates = a - med[round(r)]
+   deviates = a - (arg_present(values) ? values : med[round(r)])
 
 return, med
 end

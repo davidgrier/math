@@ -165,7 +165,7 @@ if arg_present(values) then $
    values = avg[round(r)]
 
 if arg_present(deviates) then $
-   deviates = _data - avg[round(r)]
+   deviates = _data - (arg_present(values) ? values : avg[round(r)])
 
 return, avg
 end
