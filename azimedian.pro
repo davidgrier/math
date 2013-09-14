@@ -55,6 +55,7 @@
 ;
 ; MODIFICATION HISTORY:
 ; 08/18/13 Written by David G. Grier, New York University
+; 09/14/13 DGG Compute value at largest radius.
 ;
 ; Copyright (c) 2013 David G. Grier
 ;-
@@ -117,7 +118,7 @@ endif else $
    rho = r
 
 h = histogram(rho, min = 0, max = rmax+1, reverse_indices = n)
-for i = 0L, rmax-1 do begin
+for i = 0L, rmax do begin
    n0 = n[i]
    n1 = n[i+1]-1
    if (n1 ge n0) then $
