@@ -109,7 +109,6 @@ if isa(weight, /number, /array) then $
 ; distance from center to each pixel
 r = (dindgen(nx) - xc)^2 # replicate(1., ny) + $
       replicate(1., nx) # (dindgen(ny) - yc)^2
-r = sqrt(temporary(r))
 
 if keyword_set(deinterlace) then begin
    n0 = deinterlace mod 2
@@ -117,6 +116,8 @@ if keyword_set(deinterlace) then begin
    r = r[*, n0:*:2]
 endif else $
    b = a
+
+r = sqrt(temporary(r))
 
 h = histogram(r, min = 0, max = rmax+1, reverse_indices = n)
 for i = 0L, rmax do begin

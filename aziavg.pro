@@ -133,13 +133,14 @@ if isa(weight, /number, /array) then $
 ; distance from center to each pixel
 r = (dindgen(nx) - xc)^2 # replicate(1., ny) + $
       replicate(1., nx) # (dindgen(ny) - yc)^2
-r = sqrt(temporary(r))
 
 if keyword_set(deinterlace) then begin
    n0 = deinterlace mod 2
    a = a[*, n0:*:2]
    r = r[*, n0:*:2]
 endif
+
+r = sqrt(temporary(r))
 
 rn = floor(r)
 fh = r - rn
