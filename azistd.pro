@@ -38,6 +38,8 @@
 ;    rho: the radial position of each pixel in DATA relative to the
 ;        center at (xc,yc).
 ;
+;    values: Azimuthal average at each pixel.
+;
 ;    deviates: difference between DATA and azimuthal average at each
 ;        pixel.
 ;
@@ -79,7 +81,8 @@ function azistd, _data, avg, $
                  rad = rad, $
                  rho = rho, $
                  deinterlace = deinterlace, $
-                 deviates = deviates
+                 deviates = deviates, $
+                 values = values
 
 COMPILE_OPT IDL2
 
@@ -128,16 +131,16 @@ r = (dindgen(nx) - xc)^2 # replicate(1., ny) + $
 if keyword_set(deinterlace) then begin
    n0 = deinterlace mod 2
    a = a[*, n0:*:2]
-   rho = r[*, n0:*:2]
-endif else $
-   rho = r
+   r = r[*, n0:*:2]
+endif
 
-rho = sqrt(rho)
-fh = rho - floor(rho)
+r = sqrt(temporary(r))
+rn = floor(r)
+fh = rho - rn
 fl = 1.d - fh
 ah = a * fh
 al = a * fl
-h = histogram(rho, min = 0, max = rmax+1, reverse_indices = n)
+h = histogram(r, min = 0, max = rmax+1, reverse_indices = n)
 for i = 0L, rmax-1 do begin
    n0 = n[i]
    n1 = n[i+1]-1
@@ -165,8 +168,11 @@ for i = 0L, rmax-1 do begin     ; loop through data points in range
 endfor
 std = sqrt(sum/count)               ; standard deviation
 
-if arg_present(deviates) then $
-   deviates = _data - avg[round(r)]
+if arg_present(values) or arg_present(deviates) then begin
+   values = fl*avg[rn] + fh*avg[rn+1]
+   if arg_present(deviates) then $
+      deviates = a - values
+endif
 
 return, std
 end
