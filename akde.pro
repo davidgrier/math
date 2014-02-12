@@ -25,6 +25,9 @@
 ;
 ;    weight: weighting for each sample point.
 ;
+; KEYWORD OUTPUTS:
+;    variance: statistical variance of the result
+;
 ; KEYWORD FLAGS:
 ;    By default, AKDE uses the Epanechnikov kernel to compute
 ;    the kernel density estimate for one-dimensional data, 
@@ -82,7 +85,8 @@
 
 function akde_nd, x, y, $
                   weight = weight, $
-                  alpha = alpha
+                  alpha = alpha, $
+                  variance = variance
 
 COMPILE_OPT IDL2, HIDDEN
 
@@ -108,15 +112,20 @@ lambda = (g/f)^alpha            ; Eq. (5.7): factor for each data point
 
 ; 3. adaptive density estimate
 res = fltarr(ny)
+variance = fltarr(ny)
 hfac = h # lambda               ; smoothing factor for each point
 
-eta = weight/((2.*!pi) * total(hfac^2, 1))^(nd/2.)/nx ; normalization
+norm = 1./((2.*!pi) * total(hfac^2, 1))^(nd/2.)/nx ; normalization
 
 for j = 0, ny - 1 do begin
    z = 0.5 * total(((x - rebin(y[*,j], nd, nx, /sample))/hfac)^2 , 1)
    w = where(z lt 20, ngood)
-   if ngood gt 0 then $
-      res[j] = total(eta[w]*exp(-z[w]))
+   if ngood gt 0 then begin
+      ker = norm[w] * exp(-z[w])
+      val = weight[w] * ker
+      res[j] = total(val)
+      variance[j] = total((val - res[j])^2)/nx^2
+   endif
 endfor
 
 return, res
@@ -127,7 +136,8 @@ function akde_1d, x, y, $
                   biweight = biweight, $
                   triangular = triangular, $
                   gaussian = gaussian, $
-                  alpha = alpha
+                  alpha = alpha, $
+                  variance = variance
 
 COMPILE_OPT IDL2, HIDDEN
 
@@ -151,41 +161,59 @@ lambda = (g/f)^alpha            ; Eq. (5.7)
 t = x / h
 s = y / h
 res = findgen(ny)
+variance = fltarr(ny)
+
 if keyword_set(biweight) then begin
+   norm = (15./16.) / (h * nx)
    for j = 0, ny-1 do begin
       z = ((t - s[j])/lambda)^2
       w = where(z lt 1., ngood)
-      if ngood gt 0 then $
-         res[j] = total(weight[w]*(1.-z[w])^2/lambda[w])
+      if ngood gt 0 then begin
+         ker = norm * (1. - z[w])^2 / lambda[w]
+         val = weight[w] * ker
+         res[j] = total(val)
+         variance[j] = total((val - res[j])^2)/nx^2
+      endif
    endfor
-   res *= 15./(16.*h*nx)
 endif $                     
 else if keyword_set(triangular) then begin
+   norm = 1./(h * nx)
    for j = 0, ny-1 do begin
       z = abs(t - s[j])/lambda
       w = where(z lt 1., ngood)
-      if ngood gt 0 then $
-         res[j] = total(weight[w]*(1. - z[w])/lambda[w])
+      if ngood gt 0 then begin
+         ker = norm * (1. - z[w]) / lambda[w]
+         val = weight[w] * ker[w]
+         res[j] = total(val)
+         variance[j] = total((val - res[j])^2)/nx^2
+      endif
    endfor
-   res *= 1./(h*nx)
 endif $                     
 else if keyword_set(gaussian) then begin
+   norm = 1./(sqrt(2.*!pi) * h * nx)
    for j = 0, ny-1 do begin
       z = 0.5 * ((t - s[j])/lambda)^2
       w = where(z lt 30, ngood)
-      if ngood gt 0 then $
-         res[j] = total(weight[w]*exp(-z[w]))
+      if ngood gt 0 then begin
+         ker = norm * exp(-z[w]) / lambda[w]
+         val = weight[w] * ker
+         res[j] = total(val)
+         variance[j] = total((val - res[j])^2)/nx^2
+      endif
    endfor
-   res *= 1./(sqrt(2.*!pi)*h*nx)
 endif $
 else begin                      ; Epanechnikov
+   norm = 0.75 / (sqrt(5.) * h * nx)
    for j = 0, ny-1 do begin
       z = ((t - s[j])/lambda)^2
       w = where(z lt 5., ngood)
-      if ngood gt 0 then $
-         res[j] = total(weight[w]*(1.-z[w]/5.)/lambda[w])
+      if ngood gt 0 then begin
+         ker = norm * (1. - z[w]/5.) / lambda[w]
+         val = weight[w] * ker
+         res[j] = total(val)
+         variance[j] = total((val - res[j])^2)/nx^2
+      endif
    endfor
-   res *= 0.75/(sqrt(5.)*h*nx)
 endelse
 
 return, res
@@ -197,7 +225,8 @@ function akde, x, y, $
                gaussian = gaussian, $
                biweight = biweight, $
                triangular = triangular, $
-               alpha = alpha
+               alpha = alpha, $
+               variance = variance
 
 COMPILE_OPT IDL2
 
@@ -242,5 +271,6 @@ else $
                    gaussian = gaussian, $
                    biweight = biweight, $
                    triangular = triangular, $
-                   alpha = alpha)
+                   alpha = alpha, $
+                   variance = variance)
 end

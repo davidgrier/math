@@ -21,6 +21,8 @@
 ;    weight: weighting for sampled points.
 ;
 ; KEYWORD OUTPUTS:
+;    variance: statistical variance of the result.
+;
 ;    scale: smoothing factor, also called the bandwidth, used to
 ;        compute the density estimate
 ;
@@ -67,13 +69,15 @@
 ;    arg_present().  Move normalization out of loops for efficiency.
 ;    Corrected n-dimensional normalization.  Updated usage messages.
 ; 03/22/2013 DGG rebin(/sample) is more efficient.
+; 02/10/2014 DGG Added VARIANCE keyword.
 ;
-; Copyright (c) 2010-2013 David G. Grier
+; Copyright (c) 2010-2014 David G. Grier
 ;-
 
 function kde_nd, x, y, $
                  weight = weight, $
-                 scale = scale
+                 scale = scale, $
+                 variance = variance
 
 COMPILE_OPT IDL2, HIDDEN
 
@@ -104,13 +108,19 @@ if arg_present(scale) then scale =  h
 ; density estimate
 ; Silverman Eq. (2.15) and Table 3.1
 res = fltarr(ny)
+variance = fltarr(ny)
 hfac = rebin(h, nd, nx, /sample)
 
+norm = 1./(2. * !pi * total(h^2))^(nd/2.) / nx
 for j = 0, ny-1 do begin
    z = 0.5 * total(((x - rebin(y[*,j], nd, nx, /sample)) / hfac)^2, 1)
    w = where(z lt 20, ngood)
-   if ngood gt 0 then $
-      res[j] = total(weight[w]*exp(-z[w]))
+   if ngood gt 0 then begin
+      ker = norm * exp(-z[w])
+      val = weight[w] * ker
+      res[j] = total(val)
+      variance[j] = total((val - res[j])^2)/nx^2
+   endif
 endfor
 
 res *= 1. / ((2. * !pi) * total(h^2))^(nd/2.) / nx ; normalization
@@ -123,7 +133,8 @@ function kde_1d, x, y, $
                  scale = scale, $
                  biweight = biweight, $
                  triangular = triangular, $
-                 gaussian = gaussian
+                 gaussian = gaussian, $
+                 variance = variance
 
 COMPILE_OPT IDL2, HIDDEN
 
@@ -149,42 +160,60 @@ if arg_present(scale) then scale = h
 t = x/h
 s = y/h
 res = fltarr(ny)                ; result
+variance = fltarr(ny)           ; variance in result
 
 if keyword_set(biweight) then begin
+   norm = (15./16.) / (h * nx)
    for j = 0, ny-1 do begin
       z = (t - s[j])^2
       w = where(z lt 1., ngood)
-      if ngood gt 0. then $
-         res[j] = total(weight[w]*(1.-z[w])^2)
+      if ngood gt 0. then begin
+         ker = norm * (1. - z[w])^2
+         val = weight[w] * ker
+         res[j] = total(val)
+         variance[j] = total((val - res[j])^2)/nx^2
+      endif
    endfor
-   res *= 15./(16.*h*nx)
 endif $                     
 else if keyword_set(triangular) then begin
+   norm = 1./(h * nx)
    for j = 0, ny-1 do begin
       z = abs(t - s[j])
       w = where(z lt 1., ngood)
-      if ngood gt 0 then $
-         res[j] = total(weight[w]*(1. - z[w]))
+      if ngood gt 0 then begin
+         ker = norm * (1. - z[w])
+         val = weight[w] * ker[w]
+         res[j] = total(val)
+         variance[j] = total((val - res[j])^2)/nx^2
+      endif
    endfor
    res *= 1./(h*nx)
 endif $                     
 else if keyword_set(gaussian) then begin
+   norm = 1./(sqrt(2.*!pi) * h * nx)
    for j = 0, ny-1 do begin
       z = 0.5 * (t - s[j])^2
       w = where(z lt 20, ngood)
-      if ngood gt 0 then $
-         res[j] = total(weight[w]*exp(-z[w]))
+      if ngood gt 0 then begin
+         ker = norm*exp(-z[w])
+         val = weight[w] * ker
+         res[j] = total(val)
+         variance[j] = total((val - res[j])^2)/nx^2
+      endif
    endfor
-   res *= 1./(sqrt(2.*!pi)*h*nx)
 endif $
 else begin                      ; Epanechnikov
+   norm = 0.75/(sqrt(5.) * h * nx)
    for j = 0, ny-1 do begin
       z = (t - s[j])^2
       w = where(z lt 5, ngood)
-      if ngood gt 0 then $
-         res[j] = total(weight[w]*(1.-z[w]/5.))
+      if ngood gt 0 then begin
+         ker = norm * (1. - z[w]/5.)
+         val = weight[w] * ker
+         res[j] = total(val)
+         variance[j] = total((val - res[j])^2)/nx^2
+      endif
    endfor
-   res *= 0.75/(sqrt(5.)*h*nx)
 endelse
 
 return, res
@@ -195,7 +224,8 @@ function kde, x, y, $
               scale = scale, $
               gaussian = gaussian, $
               biweight = biweight, $
-              triangular = triangular
+              triangular = triangular, $
+              variance = variance
 
 COMPILE_OPT IDL2
 
@@ -227,12 +257,13 @@ ndims = (sx[0] eq 2) ? sx[1] : 1
 if ndims gt 1 then begin
    if keyword_set(biweight) or keyword_set(triangular) then $
       message, 'Multidimensional: using Gaussian kernel', /inf
-   res = kde_nd(x, y, weight = weight, scale = scale)
+   res = kde_nd(x, y, weight = weight, scale = scale, variance = variance)
 endif else $
    res = kde_1d(x, y, weight = weight, scale = scale, $
                gaussian = gaussian, $
                biweight = biweight, $
-               triangular = triangular)
+               triangular = triangular, $
+               variance = variance)
 
 return, res
 end
