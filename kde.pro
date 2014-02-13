@@ -70,6 +70,8 @@
 ;    Corrected n-dimensional normalization.  Updated usage messages.
 ; 03/22/2013 DGG rebin(/sample) is more efficient.
 ; 02/10/2014 DGG Added VARIANCE keyword.
+; 02/13/2014 DGG Cast indexes to long to avoid integer overruns.
+;    Cast nx to float.
 ;
 ; Copyright (c) 2010-2014 David G. Grier
 ;-
@@ -85,8 +87,8 @@ sx = size(x, /dimensions)
 sy = size(y, /dimensions)
 
 nd = sx[0]                      ; number of dimensions
-nx = sx[1]                      ; number of data points
-ny = sy[1]                      ; number of sampling points
+nx = float(sx[1])               ; number of data points
+ny = long(sy[1])                ; number of sampling points
 
 if n_elements(weight) ne nx then $
    weight = replicate(1., nx)
@@ -112,10 +114,10 @@ variance = fltarr(ny)
 hfac = rebin(h, nd, nx, /sample)
 
 norm = 1./(2. * !pi * total(h^2))^(nd/2.) / nx
-for j = 0, ny-1 do begin
+for j = 0L, ny-1L do begin
    z = 0.5 * total(((x - rebin(y[*,j], nd, nx, /sample)) / hfac)^2, 1)
-   w = where(z lt 20, ngood)
-   if ngood gt 0 then begin
+   w = where(z lt 20., ngood)
+   if ngood gt 0L then begin
       ker = norm * exp(-z[w])
       val = weight[w] * ker
       res[j] = total(val)
@@ -138,7 +140,7 @@ function kde_1d, x, y, $
 
 COMPILE_OPT IDL2, HIDDEN
 
-nx = n_elements(x)              ; number of data points
+nx = float(n_elements(x))       ; number of data points
 ny = n_elements(y)              ; number of samples
 
 if n_elements(weight) ne nx then $
@@ -164,10 +166,10 @@ variance = fltarr(ny)           ; variance in result
 
 if keyword_set(biweight) then begin
    norm = (15./16.) / (h * nx)
-   for j = 0, ny-1 do begin
+   for j = 0L, ny-1L do begin
       z = (t - s[j])^2
       w = where(z lt 1., ngood)
-      if ngood gt 0. then begin
+      if ngood gt 0L then begin
          ker = norm * (1. - z[w])^2
          val = weight[w] * ker
          res[j] = total(val)
@@ -177,10 +179,10 @@ if keyword_set(biweight) then begin
 endif $                     
 else if keyword_set(triangular) then begin
    norm = 1./(h * nx)
-   for j = 0, ny-1 do begin
+   for j = 0L, ny-1L do begin
       z = abs(t - s[j])
       w = where(z lt 1., ngood)
-      if ngood gt 0 then begin
+      if ngood gt 0L then begin
          ker = norm * (1. - z[w])
          val = weight[w] * ker[w]
          res[j] = total(val)
@@ -191,10 +193,10 @@ else if keyword_set(triangular) then begin
 endif $                     
 else if keyword_set(gaussian) then begin
    norm = 1./(sqrt(2.*!pi) * h * nx)
-   for j = 0, ny-1 do begin
+   for j = 0L, ny-1L do begin
       z = 0.5 * (t - s[j])^2
-      w = where(z lt 20, ngood)
-      if ngood gt 0 then begin
+      w = where(z lt 20., ngood)
+      if ngood gt 0L then begin
          ker = norm*exp(-z[w])
          val = weight[w] * ker
          res[j] = total(val)
@@ -204,10 +206,10 @@ else if keyword_set(gaussian) then begin
 endif $
 else begin                      ; Epanechnikov
    norm = 0.75/(sqrt(5.) * h * nx)
-   for j = 0, ny-1 do begin
+   for j = 0L, ny-1L do begin
       z = (t - s[j])^2
-      w = where(z lt 5, ngood)
-      if ngood gt 0 then begin
+      w = where(z lt 5., ngood)
+      if ngood gt 0L then begin
          ker = norm * (1. - z[w]/5.)
          val = weight[w] * ker
          res[j] = total(val)
@@ -267,5 +269,3 @@ endif else $
 
 return, res
 end
-
-
