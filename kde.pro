@@ -125,8 +125,6 @@ for j = 0L, ny-1L do begin
    endif
 endfor
 
-res *= 1. / ((2. * !pi) * total(h^2))^(nd/2.) / nx ; normalization
-
 return, res
 end
 
