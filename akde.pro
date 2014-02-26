@@ -28,13 +28,16 @@
 ; KEYWORD OUTPUTS:
 ;    variance: statistical variance of the result
 ;
+;    mse: asymptotic mean squared error at each point
+;        NOTE: Currently uses MSE estimates from kde.
+;
 ; KEYWORD FLAGS:
 ;    By default, AKDE uses the Epanechnikov kernel to compute
 ;    the kernel density estimate for one-dimensional data, 
 ;    this can be overridden by setting one of the following flags:
-;    GAUSSIAN: use Gaussian kernel
-;    TRIANGULAR: use triangular kernel
-;    BIWEIGHT: use biweight kernel
+;    GAUSSIAN:   Gaussian kernel
+;    TRIANGULAR: triangular kernel
+;    BIWEIGHT:   biweight kernel
 ;
 ;    For higher-dimensional data, only the Gaussian kernel is
 ;    implemented and these flags are ignored.
@@ -81,6 +84,7 @@
 ; 02/10/2014 DGG Added VARIANCE keyword.
 ; 02/13/2014 DGG Cast indexes to long to avoid integer overflow
 ;    errors. Cast nx to float.
+; 02/25/2014 DGG First implementation of MSE.
 ;
 ; Copyright (c) 2010-2014 David G. Grier
 ;-
@@ -88,7 +92,8 @@
 function akde_nd, x, y, $
                   weight = weight, $
                   alpha = alpha, $
-                  variance = variance
+                  variance = variance, $
+                  mse = mse
 
 COMPILE_OPT IDL2, HIDDEN
 
@@ -104,7 +109,7 @@ if n_elements(weight) ne nx then $
 
 ; Method described by Silverman Sec. 5.3.1
 ; 1. pilot estimate of the density at the data points
-f = kde(x, x, scale = h)
+f = kde(x, x, scale = h, mse = mse)
 
 ; 2. local bandwidth factor
 if n_elements(alpha) ne 1 then $
@@ -139,7 +144,8 @@ function akde_1d, x, y, $
                   triangular = triangular, $
                   gaussian = gaussian, $
                   alpha = alpha, $
-                  variance = variance
+                  variance = variance, $
+                  mse = mse
 
 COMPILE_OPT IDL2, HIDDEN
 
@@ -151,7 +157,7 @@ if n_elements(weight) ne nx then $
 
 ; Method described by Silverman Sec. 5.3.1
 ; 1. pilot estimate of the density at the data points
-f = kde(x, x, scale = h)        ; use Epanechnikov (p. 102)
+f = kde(x, x, scale = h, mse = mse) ; use Epanechnikov (p. 102)
 
 ; 2. local bandwidth factor
 if n_elements(alpha) ne 1 then $
@@ -228,7 +234,8 @@ function akde, x, y, $
                biweight = biweight, $
                triangular = triangular, $
                alpha = alpha, $
-               variance = variance
+               variance = variance, $
+               mse = mse
 
 COMPILE_OPT IDL2
 
@@ -266,7 +273,8 @@ if n_elements(alpha) eq 1 then begin
 endif
 
 if ndims gt 1 then $
-   return, akde_nd(x, y, weight = weight, alpha = alpha, variance = variance) $
+   return, akde_nd(x, y, weight = weight, alpha = alpha, $
+                   variance = variance, mse = mse) $
 else $
    return, akde_1d(x, y, $
                    weight = weight, $
@@ -274,5 +282,6 @@ else $
                    biweight = biweight, $
                    triangular = triangular, $
                    alpha = alpha, $
-                   variance = variance)
+                   variance = variance, $
+                   mse = mse)
 end

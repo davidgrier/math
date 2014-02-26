@@ -23,6 +23,9 @@
 ; KEYWORD OUTPUTS:
 ;    variance: statistical variance of the result.
 ;
+;    mse: asymptotic mean square error at each point.
+;         NOTE: Not implemented for triangular kernel.
+;
 ;    scale: smoothing factor, also called the bandwidth, used to
 ;        compute the density estimate
 ;
@@ -30,9 +33,9 @@
 ;    By default, KDE uses the Epanechnikov kernel to compute
 ;    the kernel density estimate, this can be overridden by
 ;    setting one of the following flags:
-;    GAUSSIAN: use Gaussian kernel
-;    TRIANGULAR: use triangular kernel
-;    BIWEIGHT: use biweight kernel
+;    GAUSSIAN:   Gaussian kernel
+;    TRIANGULAR: triangular kernel
+;    BIWEIGHT:   biweight kernel
 ;
 ; OUTPUTS:
 ;    rho: probability density estimated at each value specified by x
@@ -46,10 +49,18 @@
 ;    where h is the estimated optimal smoothing parameter and
 ;    where K(z) is the selected kernel.
 ;
-; REFERENCE:
-; B. W. Silverman,
-; Density Estimation for Statistics and Data Analysis
-; (CRC Press, Boca Raton, 1998)
+; REFERENCES:
+; 1. B. W. Silverman,
+;    Density Estimation for Statistics and Data Analysis
+;    (CRC Press, Boca Raton, 1998)
+;
+; 2. B. E. Hansen, "Lecture Notes on Nonparametrics"
+;    University of Wisconsin, Spring 2009
+;    http://www.ssc.wisc.edu/~bhansen/718/NonParametrics1.pdf
+;
+; 3. Z. Ouyang, "Univariate Kernel Density Estimation"
+;    Duke University, August 2005
+;    http://www.stat.duke.edu/~zo2/shared/research/readings/kernelsmoothing.pdf
 ;
 ; EXAMPLE:
 ;    IDL> p = randomn(seed, 10000)
@@ -72,6 +83,7 @@
 ; 02/10/2014 DGG Added VARIANCE keyword.
 ; 02/13/2014 DGG Cast indexes to long to avoid integer overruns.
 ;    Cast nx to float.
+; 02/25/2014 DGG Implemented MSE.
 ;
 ; Copyright (c) 2010-2014 David G. Grier
 ;-
@@ -79,7 +91,8 @@
 function kde_nd, x, y, $
                  weight = weight, $
                  scale = scale, $
-                 variance = variance
+                 variance = variance, $
+                 mse = mse
 
 COMPILE_OPT IDL2, HIDDEN
 
@@ -111,6 +124,7 @@ if arg_present(scale) then scale =  h
 ; Silverman Eq. (2.15) and Table 3.1
 res = fltarr(ny)
 variance = fltarr(ny)
+mse = fltarr(ny)
 hfac = rebin(h, nd, nx, /sample)
 
 norm = 1./(2. * !pi * total(h^2))^(nd/2.) / nx
@@ -122,6 +136,8 @@ for j = 0L, ny-1L do begin
       val = weight[w] * ker
       res[j] = total(val)
       variance[j] = total((val - res[j])^2)/nx^2
+      mse[j] = (norm / 2.^(nd/2.)) * res[j] + $
+               (norm * total(z[w]*val) - res[j]/2.)^2/abs(total(weight[w]))
    endif
 endfor
 
@@ -134,7 +150,8 @@ function kde_1d, x, y, $
                  biweight = biweight, $
                  triangular = triangular, $
                  gaussian = gaussian, $
-                 variance = variance
+                 variance = variance, $
+                 mse = mse
 
 COMPILE_OPT IDL2, HIDDEN
 
@@ -161,6 +178,7 @@ t = x/h
 s = y/h
 res = fltarr(ny)                ; result
 variance = fltarr(ny)           ; variance in result
+mse = fltarr(ny)                ; asymptotic mean-squared error
 
 if keyword_set(biweight) then begin
    norm = (15./16.) / (h * nx)
@@ -172,6 +190,8 @@ if keyword_set(biweight) then begin
          val = weight[w] * ker
          res[j] = total(val)
          variance[j] = total((val - res[j])^2)/nx^2
+         mse[j] = (7./16.) * norm * res[j] + $
+                  (16./56. * norm * total(weight[w]*(3.*z[w] - 1.)))^2/abs(total(weight[w]))
       endif
    endfor
 endif $                     
@@ -192,26 +212,30 @@ endif $
 else if keyword_set(gaussian) then begin
    norm = 1./(sqrt(2.*!pi) * h * nx)
    for j = 0L, ny-1L do begin
-      z = 0.5 * (t - s[j])^2
+      z = (t - s[j])^2/2.
       w = where(z lt 20., ngood)
       if ngood gt 0L then begin
          ker = norm*exp(-z[w])
          val = weight[w] * ker
          res[j] = total(val)
          variance[j] = total((val - res[j])^2)/nx^2
+         mse[j] = (norm / sqrt(2.)) * res[j] + $
+                  (norm * total(z[w]*val) - res[j]/2.)^2/abs(total(weight[w]))
       endif
    endfor
 endif $
 else begin                      ; Epanechnikov
-   norm = 0.75/(sqrt(5.) * h * nx)
+   norm = (3./4./sqrt(5.)) / (h * nx)
    for j = 0L, ny-1L do begin
-      z = (t - s[j])^2
-      w = where(z lt 5., ngood)
+      z = (t - s[j])^2/5.
+      w = where(z lt 1., ngood)
       if ngood gt 0L then begin
-         ker = norm * (1. - z[w]/5.)
+         ker = norm * (1. - z[w])
          val = weight[w] * ker
          res[j] = total(val)
          variance[j] = total((val - res[j])^2)/nx^2
+         mse[j] = (4./5.) * norm * res[j] + $
+                  ((1./5.) * norm)^2 * abs(total(weight[w]))
       endif
    endfor
 endelse
@@ -225,7 +249,8 @@ function kde, x, y, $
               gaussian = gaussian, $
               biweight = biweight, $
               triangular = triangular, $
-              variance = variance
+              variance = variance, $
+              mse = mse
 
 COMPILE_OPT IDL2
 
@@ -257,13 +282,15 @@ ndims = (sx[0] eq 2) ? sx[1] : 1
 if ndims gt 1 then begin
    if keyword_set(biweight) or keyword_set(triangular) then $
       message, 'Multidimensional: using Gaussian kernel', /inf
-   res = kde_nd(x, y, weight = weight, scale = scale, variance = variance)
+   res = kde_nd(x, y, weight = weight, scale = scale, $
+                variance = variance, mse = mse)
 endif else $
    res = kde_1d(x, y, weight = weight, scale = scale, $
                gaussian = gaussian, $
                biweight = biweight, $
                triangular = triangular, $
-               variance = variance)
+               variance = variance, $
+               mse = mse)
 
 return, res
 end
