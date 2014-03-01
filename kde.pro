@@ -84,6 +84,7 @@
 ; 02/13/2014 DGG Cast indexes to long to avoid integer overruns.
 ;    Cast nx to float.
 ; 02/25/2014 DGG Implemented MSE.
+; 03/01/2014 DGG Revised MSE calculations.
 ;
 ; Copyright (c) 2010-2014 David G. Grier
 ;-
@@ -135,9 +136,9 @@ for j = 0L, ny-1L do begin
       ker = norm * exp(-z[w])
       val = weight[w] * ker
       res[j] = total(val)
-      variance[j] = total((val - res[j])^2)/nx^2
-      mse[j] = (norm / 2.^(nd/2.)) * res[j] + $
-               (norm * total(z[w]*val) - res[j]/2.)^2/abs(total(weight[w]))
+      variance[j] = total((val - res[j])^2)/nx
+      mse[j] = (norm / 2.^(nd/2.)) * res[j]^2/total(ker) + $
+               (total(weight[w]*(1. - z[w])*ker)/2.)^2
    endif
 endfor
 
@@ -189,9 +190,9 @@ if keyword_set(biweight) then begin
          ker = norm * (1. - z[w])^2
          val = weight[w] * ker
          res[j] = total(val)
-         variance[j] = total((val - res[j])^2)/nx^2
-         mse[j] = (7./16.) * norm * res[j] + $
-                  (16./56. * norm * total(weight[w]*(3.*z[w] - 1.)))^2/abs(total(weight[w]))
+         variance[j] = total((val - res[j])^2)/nx
+         mse[j] = res[j]^2/total(ker) / (7. * nx * h) + $
+                  (10./7. * norm * total(weight[w] * (3.*z[w] - 1.)))^2
       endif
    endfor
 endif $                     
@@ -204,7 +205,7 @@ else if keyword_set(triangular) then begin
          ker = norm * (1. - z[w])
          val = weight[w] * ker[w]
          res[j] = total(val)
-         variance[j] = total((val - res[j])^2)/nx^2
+         variance[j] = total((val - res[j])^2)/nx
       endif
    endfor
    res *= 1./(h*nx)
@@ -218,9 +219,10 @@ else if keyword_set(gaussian) then begin
          ker = norm*exp(-z[w])
          val = weight[w] * ker
          res[j] = total(val)
-         variance[j] = total((val - res[j])^2)/nx^2
-         mse[j] = (norm / sqrt(2.)) * res[j] + $
-                  (norm * total(z[w]*val) - res[j]/2.)^2/abs(total(weight[w]))
+         variance[j] = total((val - res[j])^2)/nx
+         mse[j] = (total(weight[w]v*v(1. - z[w]) * ker)/2.)^2 + $
+                  (norm / sqrt(2.)) * res[j]^2 / total(ker)
+                  
       endif
    endfor
 endif $
@@ -233,9 +235,9 @@ else begin                      ; Epanechnikov
          ker = norm * (1. - z[w])
          val = weight[w] * ker
          res[j] = total(val)
-         variance[j] = total((val - res[j])^2)/nx^2
-         mse[j] = (4./5.) * norm * res[j] + $
-                  ((1./5.) * norm)^2 * abs(total(weight[w]))
+         variance[j] = total((val - res[j])^2)/nx
+         mse[j] = (norm/5. * total(weight[w]))^2 + $
+                  norm * res[j]^2 / total(ker)
       endif
    endfor
 endelse
