@@ -220,7 +220,7 @@ else if keyword_set(gaussian) then begin
          val = weight[w] * ker
          res[j] = total(val)
          variance[j] = total((val - res[j])^2)/nx
-         mse[j] = (total(weight[w] * v(1. - z[w]) * ker)/2.)^2 + $
+         mse[j] = (total(weight[w] * (1. - z[w]) * ker)/2.)^2 + $
                   (norm / sqrt(2.)) * res[j]^2 / total(ker)
                   
       endif
