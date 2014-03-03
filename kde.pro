@@ -131,6 +131,7 @@ if arg_present(scale) then scale =  h
 ; Silverman Eq. (2.15) and Table 3.1
 res = fltarr(ny)
 variance = fltarr(ny)
+bias = fltarr(ny)
 mse = fltarr(ny)
 hfac = rebin(h, nd, nx, /sample)
 
@@ -243,7 +244,7 @@ else begin                      ; Epanechnikov
          val = weight[w] * ker
          res[j] = total(val)
          variance[j] = total((val - res[j])^2)/nx
-         bias[j] = norm/5. * total(weight[w]
+         bias[j] = norm/5. * total(weight[w])
          mse[j] = norm * res[j]^2 / total(ker) + bias[j]^2
       endif
    endfor
