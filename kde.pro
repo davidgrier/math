@@ -23,6 +23,10 @@
 ; KEYWORD OUTPUTS:
 ;    variance: statistical variance of the result.
 ;
+;    bias: asymptotic estimate for the statistical bias at each point.
+;         The absolute value is an estimate for the error in rho.
+;         NOTE: Not implemented for triangular kernel.
+;
 ;    mse: asymptotic mean square error at each point.
 ;         NOTE: Not implemented for triangular kernel.
 ;
@@ -85,6 +89,7 @@
 ;    Cast nx to float.
 ; 02/25/2014 DGG Implemented MSE.
 ; 03/01/2014 DGG Revised MSE calculations.
+; 03/03/2014 DGG Implemented BIAS.
 ;
 ; Copyright (c) 2010-2014 David G. Grier
 ;-
@@ -93,6 +98,7 @@ function kde_nd, x, y, $
                  weight = weight, $
                  scale = scale, $
                  variance = variance, $
+                 bias = bias, $
                  mse = mse
 
 COMPILE_OPT IDL2, HIDDEN
@@ -137,8 +143,8 @@ for j = 0L, ny-1L do begin
       val = weight[w] * ker
       res[j] = total(val)
       variance[j] = total((val - res[j])^2)/nx
-      mse[j] = (norm / 2.^(nd/2.)) * res[j]^2/total(ker) + $
-               (total(weight[w]*(1. - z[w])*ker)/2.)^2
+      bias[j] = total(weight[w]*(1. - z[w])*ker)/2.
+      mse[j] = (norm / 2.^(nd/2.)) * res[j]^2/total(ker) + bias[j]^2
    endif
 endfor
 
@@ -152,6 +158,7 @@ function kde_1d, x, y, $
                  triangular = triangular, $
                  gaussian = gaussian, $
                  variance = variance, $
+                 bias = bias, $
                  mse = mse
 
 COMPILE_OPT IDL2, HIDDEN
@@ -179,6 +186,7 @@ t = x/h
 s = y/h
 res = fltarr(ny)                ; result
 variance = fltarr(ny)           ; variance in result
+bias = fltarr(ny)
 mse = fltarr(ny)                ; asymptotic mean-squared error
 
 if keyword_set(biweight) then begin
@@ -191,8 +199,8 @@ if keyword_set(biweight) then begin
          val = weight[w] * ker
          res[j] = total(val)
          variance[j] = total((val - res[j])^2)/nx
-         mse[j] = res[j]^2/total(ker) / (7. * nx * h) + $
-                  (10./7. * norm * total(weight[w] * (3.*z[w] - 1.)))^2
+         bias[j] = 10./7. * norm * total(weight[w] * (3.*z[w] - 1.))
+         mse[j] = res[j]^2/total(ker) / (7. * nx * h) + bias[j]^2
       endif
    endfor
 endif $                     
@@ -220,9 +228,8 @@ else if keyword_set(gaussian) then begin
          val = weight[w] * ker
          res[j] = total(val)
          variance[j] = total((val - res[j])^2)/nx
-         mse[j] = (total(weight[w] * (1. - z[w]) * ker)/2.)^2 + $
-                  (norm / sqrt(2.)) * res[j]^2 / total(ker)
-                  
+         bias[j] = total(weight[w] * (1. - z[w]) * ker)/2.
+         mse[j] = (norm / sqrt(2.)) * res[j]^2 / total(ker) + bias[j]^2                  
       endif
    endfor
 endif $
@@ -236,8 +243,8 @@ else begin                      ; Epanechnikov
          val = weight[w] * ker
          res[j] = total(val)
          variance[j] = total((val - res[j])^2)/nx
-         mse[j] = (norm/5. * total(weight[w]))^2 + $
-                  norm * res[j]^2 / total(ker)
+         bias[j] = norm/5. * total(weight[w]
+         mse[j] = norm * res[j]^2 / total(ker) + bias[j]^2
       endif
    endfor
 endelse
@@ -252,6 +259,7 @@ function kde, x, y, $
               biweight = biweight, $
               triangular = triangular, $
               variance = variance, $
+              bias = bias, $
               mse = mse
 
 COMPILE_OPT IDL2
@@ -285,14 +293,15 @@ if ndims gt 1 then begin
    if keyword_set(biweight) or keyword_set(triangular) then $
       message, 'Multidimensional: using Gaussian kernel', /inf
    res = kde_nd(x, y, weight = weight, scale = scale, $
-                variance = variance, mse = mse)
+                variance = variance, bias = bias, mse = mse)
 endif else $
    res = kde_1d(x, y, weight = weight, scale = scale, $
-               gaussian = gaussian, $
-               biweight = biweight, $
-               triangular = triangular, $
-               variance = variance, $
-               mse = mse)
+                gaussian = gaussian, $
+                biweight = biweight, $
+                triangular = triangular, $
+                variance = variance, $
+                bias = bias, $
+                mse = mse)
 
 return, res
 end
