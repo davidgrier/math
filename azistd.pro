@@ -136,7 +136,7 @@ endif
 
 r = sqrt(temporary(r))
 rn = floor(r)
-fh = rho - rn
+fh = r - rn
 fl = 1.d - fh
 ah = a * fh
 al = a * fl
