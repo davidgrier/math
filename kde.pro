@@ -21,14 +21,18 @@
 ;    weight: weighting for sampled points.
 ;
 ; KEYWORD OUTPUTS:
-;    variance: statistical variance of the result.
+;    sigma: estimate for the statistical uncertainty of the estimated density.
 ;
-;    bias: asymptotic estimate for the statistical bias at each point.
-;         The absolute value is an estimate for the error in rho.
-;         NOTE: Not implemented for triangular kernel.
+;    variance: estimate for the variance between the returned density
+;        and the true underlying density.
 ;
-;    mse: asymptotic mean square error at each point.
-;         NOTE: Not implemented for triangular kernel.
+;    bias: asymptotic estimate for the statistical bias at each point
+;        relative to the true underlying density.
+;        NOTE: Not implemented for triangular kernel.
+;
+;    mse: asymptotic mean square error at each point between the
+;        returned density and the true underlying distribution.
+;        NOTE: Not implemented for triangular kernel.
 ;
 ;    scale: smoothing factor, also called the bandwidth, used to
 ;        compute the density estimate
@@ -90,6 +94,7 @@
 ; 02/25/2014 DGG Implemented MSE.
 ; 03/01/2014 DGG Revised MSE calculations.
 ; 03/03/2014 DGG Implemented BIAS.
+; 05/01/2014 DGG and Henrique Moyses Implemented SIGMA.
 ;
 ; Copyright (c) 2010-2014 David G. Grier
 ;-
@@ -99,7 +104,8 @@ function kde_nd, x, y, $
                  scale = scale, $
                  variance = variance, $
                  bias = bias, $
-                 mse = mse
+                 mse = mse, $
+                 sigma = sigma
 
 COMPILE_OPT IDL2, HIDDEN
 
@@ -133,6 +139,7 @@ res = fltarr(ny)
 variance = fltarr(ny)
 bias = fltarr(ny)
 mse = fltarr(ny)
+sigma = fltarr(ny)
 hfac = rebin(h, nd, nx, /sample)
 
 norm = 1./(2. * !pi * total(h^2))^(nd/2.) / nx
@@ -143,11 +150,14 @@ for j = 0L, ny-1L do begin
       ker = norm * exp(-z[w])
       val = weight[w] * ker
       res[j] = total(val)
+      sigma[j] = total(val^2)
       variance[j] = total((val - res[j])^2)/nx
       bias[j] = total(weight[w]*(1. - z[w])*ker)/2.
       mse[j] = (norm / 2.^(nd/2.)) * res[j]^2/total(ker) + bias[j]^2
    endif
 endfor
+
+sigma = sqrt(sigma)
 
 return, res
 end
@@ -160,7 +170,8 @@ function kde_1d, x, y, $
                  gaussian = gaussian, $
                  variance = variance, $
                  bias = bias, $
-                 mse = mse
+                 mse = mse, $
+                 sigma = sigma
 
 COMPILE_OPT IDL2, HIDDEN
 
@@ -189,6 +200,7 @@ res = fltarr(ny)                ; result
 variance = fltarr(ny)           ; variance in result
 bias = fltarr(ny)
 mse = fltarr(ny)                ; asymptotic mean-squared error
+sigma = fltarr(ny)              ; statistical error of density
 
 if keyword_set(biweight) then begin
    norm = (15./16.) / (h * nx)
@@ -199,6 +211,7 @@ if keyword_set(biweight) then begin
          ker = norm * (1. - z[w])^2
          val = weight[w] * ker
          res[j] = total(val)
+         sigma[j] = total(val^2)
          variance[j] = total((val - res[j])^2)/nx
          bias[j] = 10./7. * norm * total(weight[w] * (3.*z[w] - 1.))
          mse[j] = res[j]^2/total(ker) / (7. * nx * h) + bias[j]^2
@@ -214,10 +227,10 @@ else if keyword_set(triangular) then begin
          ker = norm * (1. - z[w])
          val = weight[w] * ker[w]
          res[j] = total(val)
+         sigma[j] = total(val^2)
          variance[j] = total((val - res[j])^2)/nx
       endif
    endfor
-   res *= 1./(h*nx)
 endif $                     
 else if keyword_set(gaussian) then begin
    norm = 1./(sqrt(2.*!pi) * h * nx)
@@ -228,6 +241,7 @@ else if keyword_set(gaussian) then begin
          ker = norm*exp(-z[w])
          val = weight[w] * ker
          res[j] = total(val)
+         sigma[j] = total(val^2)
          variance[j] = total((val - res[j])^2)/nx
          bias[j] = total(weight[w] * (1. - z[w]) * ker)/2.
          mse[j] = (norm / sqrt(2.)) * res[j]^2 / total(ker) + bias[j]^2                  
@@ -243,12 +257,15 @@ else begin                      ; Epanechnikov
          ker = norm * (1. - z[w])
          val = weight[w] * ker
          res[j] = total(val)
+         sigma[j] = total(val^2)
          variance[j] = total((val - res[j])^2)/nx
          bias[j] = norm/5. * total(weight[w])
          mse[j] = norm * res[j]^2 / total(ker) + bias[j]^2
       endif
    endfor
 endelse
+
+sigma = sqrt(sigma)
 
 return, res
 end
@@ -261,7 +278,8 @@ function kde, x, y, $
               triangular = triangular, $
               variance = variance, $
               bias = bias, $
-              mse = mse
+              mse = mse, $
+              sigma = sigma
 
 COMPILE_OPT IDL2
 
@@ -294,7 +312,10 @@ if ndims gt 1 then begin
    if keyword_set(biweight) or keyword_set(triangular) then $
       message, 'Multidimensional: using Gaussian kernel', /inf
    res = kde_nd(x, y, weight = weight, scale = scale, $
-                variance = variance, bias = bias, mse = mse)
+                variance = variance, $
+                bias = bias, $
+                mse = mse,  $
+                sigma = sigma)
 endif else $
    res = kde_1d(x, y, weight = weight, scale = scale, $
                 gaussian = gaussian, $
@@ -302,7 +323,8 @@ endif else $
                 triangular = triangular, $
                 variance = variance, $
                 bias = bias, $
-                mse = mse)
+                mse = mse, $
+                sigma = sigma)
 
 return, res
 end
