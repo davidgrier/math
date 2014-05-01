@@ -96,7 +96,7 @@
 ; 03/03/2014 DGG Implemented BIAS.
 ; 05/01/2014 DGG and Henrique Moyses Implemented SIGMA.
 ;
-; Copyright (c) 2010-2014 David G. Grier
+; Copyright (c) 2010-2014 David G. Grier and Henrique Moyses
 ;-
 
 function kde_nd, x, y, $
