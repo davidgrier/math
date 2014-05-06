@@ -26,14 +26,6 @@
 ;    variance: estimate for the variance between the returned density
 ;        and the true underlying density.
 ;
-;    bias: asymptotic estimate for the statistical bias at each point
-;        relative to the true underlying density.
-;        NOTE: Not implemented for triangular kernel.
-;
-;    mse: asymptotic mean square error at each point between the
-;        returned density and the true underlying distribution.
-;        NOTE: Not implemented for triangular kernel.
-;
 ;    scale: smoothing factor, also called the bandwidth, used to
 ;        compute the density estimate
 ;
@@ -95,6 +87,8 @@
 ; 03/01/2014 DGG Revised MSE calculations.
 ; 03/03/2014 DGG Implemented BIAS.
 ; 05/01/2014 DGG and Henrique Moyses Implemented SIGMA.
+; 05/02/2014 DGG Array-based implementation.  Elimianted BIAS and MSE
+;    in favor of VARIANCE.
 ;
 ; Copyright (c) 2010-2014 David G. Grier and Henrique Moyses
 ;-
@@ -103,8 +97,6 @@ function kde_nd, x, y, $
                  weight = weight, $
                  scale = scale, $
                  variance = variance, $
-                 bias = bias, $
-                 mse = mse, $
                  sigma = sigma
 
 COMPILE_OPT IDL2, HIDDEN
@@ -137,8 +129,6 @@ if arg_present(scale) then scale =  h
 ; Silverman Eq. (2.15) and Table 3.1
 res = fltarr(ny)
 variance = fltarr(ny)
-bias = fltarr(ny)
-mse = fltarr(ny)
 sigma = fltarr(ny)
 hfac = rebin(h, nd, nx, /sample)
 
@@ -152,8 +142,6 @@ for j = 0L, ny-1L do begin
       res[j] = total(val)
       sigma[j] = total(val^2)
       variance[j] = total((val - res[j])^2)/nx
-      bias[j] = total(weight[w]*(1. - z[w])*ker)/2.
-      mse[j] = (norm / 2.^(nd/2.)) * res[j]^2/total(ker) + bias[j]^2
    endif
 endfor
 
@@ -169,17 +157,12 @@ function kde_1d, x, y, $
                  triangular = triangular, $
                  gaussian = gaussian, $
                  variance = variance, $
-                 bias = bias, $
-                 mse = mse, $
                  sigma = sigma
 
 COMPILE_OPT IDL2, HIDDEN
 
 nx = float(n_elements(x))       ; number of data points
 ny = n_elements(y)              ; number of samples
-
-if n_elements(weight) ne nx then $
-   weight = replicate(1., nx)
 
 ; optimal smoothing parameter
 ; Silverman Eqs. (3.30) and (3.31)
@@ -196,78 +179,40 @@ if arg_present(scale) then scale = h
 ; Silverman Eq. (2.15) and Table 3.1
 t = x/h
 s = y/h
-res = fltarr(ny)                ; result
-variance = fltarr(ny)           ; variance in result
-bias = fltarr(ny)
-mse = fltarr(ny)                ; asymptotic mean-squared error
-sigma = fltarr(ny)              ; statistical error of density
+
+z = rebin(t, nx, ny, /sample) - rebin(transpose(s), nx, ny, /sample)
 
 if keyword_set(biweight) then begin
    norm = (15./16.) / (h * nx)
-   for j = 0L, ny-1L do begin
-      z = (t - s[j])^2
-      w = where(z lt 1., ngood)
-      if ngood gt 0L then begin
-         ker = norm * (1. - z[w])^2
-         val = weight[w] * ker
-         res[j] = total(val)
-         sigma[j] = total(val^2)
-         variance[j] = total((val - res[j])^2)/nx
-         bias[j] = 10./7. * norm * total(weight[w] * (3.*z[w] - 1.))
-         mse[j] = res[j]^2/total(ker) / (7. * nx * h) + bias[j]^2
-      endif
-   endfor
-endif $                     
-else if keyword_set(triangular) then begin
+   z *= z
+   mask = (z lt 1.)
+   value = norm * mask * (1. - z)^2
+endif else if keyword_set(triangular) then begin
    norm = 1./(h * nx)
-   for j = 0L, ny-1L do begin
-      z = abs(t - s[j])
-      w = where(z lt 1., ngood)
-      if ngood gt 0L then begin
-         ker = norm * (1. - z[w])
-         val = weight[w] * ker[w]
-         res[j] = total(val)
-         sigma[j] = total(val^2)
-         variance[j] = total((val - res[j])^2)/nx
-      endif
-   endfor
-endif $                     
-else if keyword_set(gaussian) then begin
+   z = abs(z)
+   mask = (z lt 1)
+   value = norm * mask * (1. - z)
+endif else if keyword_set(gaussian) then begin
    norm = 1./(sqrt(2.*!pi) * h * nx)
-   for j = 0L, ny-1L do begin
-      z = (t - s[j])^2/2.
-      w = where(z lt 20., ngood)
-      if ngood gt 0L then begin
-         ker = norm*exp(-z[w])
-         val = weight[w] * ker
-         res[j] = total(val)
-         sigma[j] = total(val^2)
-         variance[j] = total((val - res[j])^2)/nx
-         bias[j] = total(weight[w] * (1. - z[w]) * ker)/2.
-         mse[j] = (norm / sqrt(2.)) * res[j]^2 / total(ker) + bias[j]^2                  
-      endif
-   endfor
-endif $
-else begin                      ; Epanechnikov
+   z *= z/2.
+   mask = (z lt 20.)
+   value = norm * mask * exp(-z * mask)
+endif else begin                      ; Epanechnikov
    norm = (3./4./sqrt(5.)) / (h * nx)
-   for j = 0L, ny-1L do begin
-      z = (t - s[j])^2/5.
-      w = where(z lt 1., ngood)
-      if ngood gt 0L then begin
-         ker = norm * (1. - z[w])
-         val = weight[w] * ker
-         res[j] = total(val)
-         sigma[j] = total(val^2)
-         variance[j] = total((val - res[j])^2)/nx
-         bias[j] = norm/5. * total(weight[w])
-         mse[j] = norm * res[j]^2 / total(ker) + bias[j]^2
-      endif
-   endfor
+   z *= z/5.
+   mask = (z lt 1.)
+   value = norm * mask * (1. - z)
 endelse
 
-sigma = sqrt(sigma)
+if n_elements(weight) eq nx then $
+   value *= rebin(weight, nx, ny, /sample)
+result = total(value, 1)
+if arg_present(sigma) then $
+   sigma = sqrt(total(value^2, 1))
+if arg_present(variance) then $
+   variance = total((value - rebin(transpose(result), nx, ny, /sample))^2, 1) / nx
 
-return, res
+return, result
 end
 
 function kde, x, y, $
@@ -277,8 +222,6 @@ function kde, x, y, $
               biweight = biweight, $
               triangular = triangular, $
               variance = variance, $
-              bias = bias, $
-              mse = mse, $
               sigma = sigma
 
 COMPILE_OPT IDL2
@@ -313,8 +256,6 @@ if ndims gt 1 then begin
       message, 'Multidimensional: using Gaussian kernel', /inf
    res = kde_nd(x, y, weight = weight, scale = scale, $
                 variance = variance, $
-                bias = bias, $
-                mse = mse,  $
                 sigma = sigma)
 endif else $
    res = kde_1d(x, y, weight = weight, scale = scale, $
@@ -322,8 +263,6 @@ endif else $
                 biweight = biweight, $
                 triangular = triangular, $
                 variance = variance, $
-                bias = bias, $
-                mse = mse, $
                 sigma = sigma)
 
 return, res
