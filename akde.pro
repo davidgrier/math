@@ -10,7 +10,7 @@
 ;    Statistics
 ;
 ; CALLING SEQUENCE:
-;    d = akde(x, s)
+;    rho = akde(x, s)
 ;
 ; INPUTS:
 ;    x: discrete samples of the desired distribution.
@@ -26,10 +26,11 @@
 ;    weight: weighting for each sample point.
 ;
 ; KEYWORD OUTPUTS:
-;    variance: statistical variance of the result
+;    sigma: estimate for the statistical uncertainty of the estimated
+;        density
 ;
-;    mse: asymptotic mean squared error at each point
-;        NOTE: Currently uses MSE estimates from kde.
+;    variance: statistical variance between the returned density
+;        and the true underlying density
 ;
 ; KEYWORD FLAGS:
 ;    By default, AKDE uses the Epanechnikov kernel to compute
@@ -43,13 +44,13 @@
 ;    implemented and these flags are ignored.
 ;
 ; OUTPUTS:
-;    d: probability density estimated at each value specified by s.
+;    rho: probability density estimated at each value specified by s.
 ;
 ; RESTRICTIONS:
 ;    Multivariate estimates are only computed with Gaussian kernels.
 ;
 ; PROCEDURE:
-;    d_i = (1/N) \sum_{j = 1}^N w_j K((x_j - s_i)/h_j)
+;    rho_i = (1/N) \sum_{j = 1}^N w_j K((x_j - s_i)/h_j)
 ;
 ;    where K(x) is the selected kernel,
 ;    where h_j is the estimated optimal smoothing parameter at
@@ -57,9 +58,9 @@
 ;    measurement at position x_j.
 ;
 ; REFERENCE:
-; B. W. Silverman,
-; Density Estimation for Statistics and Data Analysis
-; (CRC Press, Boca Raton, 1998)
+; 1. B. W. Silverman,
+;    Density Estimation for Statistics and Data Analysis
+;    (CRC Press, Boca Raton, 1998)
 ;
 ; EXAMPLE:
 ;    IDL> x = randomn(seed, 1000)
@@ -85,6 +86,8 @@
 ; 02/13/2014 DGG Cast indexes to long to avoid integer overflow
 ;    errors. Cast nx to float.
 ; 02/25/2014 DGG First implementation of MSE.
+; 05/07/2014 DGG Removed MSE.  First implementation of SIGMA.
+;    Array-based computations.
 ;
 ; Copyright (c) 2010-2014 David G. Grier
 ;-
@@ -93,7 +96,7 @@ function akde_nd, x, y, $
                   weight = weight, $
                   alpha = alpha, $
                   variance = variance, $
-                  mse = mse
+                  sigma = sigma
 
 COMPILE_OPT IDL2, HIDDEN
 
@@ -109,7 +112,7 @@ if n_elements(weight) ne nx then $
 
 ; Method described by Silverman Sec. 5.3.1
 ; 1. pilot estimate of the density at the data points
-f = kde(x, x, scale = h, mse = mse)
+f = kde(x, x, scale = h, sigma = sigma)
 
 ; 2. local bandwidth factor
 if n_elements(alpha) ne 1 then $
@@ -145,7 +148,7 @@ function akde_1d, x, y, $
                   gaussian = gaussian, $
                   alpha = alpha, $
                   variance = variance, $
-                  mse = mse
+                  sigma = sigma
 
 COMPILE_OPT IDL2, HIDDEN
 
@@ -157,74 +160,54 @@ if n_elements(weight) ne nx then $
 
 ; Method described by Silverman Sec. 5.3.1
 ; 1. pilot estimate of the density at the data points
-f = kde(x, x, scale = h, mse = mse) ; use Epanechnikov (p. 102)
+f = kde(x, x, scale = h) ; use Epanechnikov (p. 102)
 
 ; 2. local bandwidth factor
-if n_elements(alpha) ne 1 then $
-   alpha = 0.5                  ; sensitivity parameter: 0 <= alpha <= 1
-g = exp(mean(alog(f)))          ; geometric mean density
-lambda = (g/f)^alpha            ; Eq. (5.7)
+if ~isa(alpha, /number, /scalar) then $
+   alpha = 0.5                               ; sensitivity parameter: 0 <= alpha <= 1
+g = exp(mean(alog(f)))                       ; geometric mean density
+lambda = rebin((g/f)^alpha, nx, ny, /sample) ; Eq. (5.7), expanded for outer sum
 
 ; 3. adaptive density estimate
-t = x / h
-s = y / h
-res = findgen(ny)
-variance = fltarr(ny)
+t = x/h
+s = y/h
+
+z = rebin(t, nx, ny, /sample) - rebin(transpose(s), nx, ny, /sample)
+z /= lambda
 
 if keyword_set(biweight) then begin
    norm = (15./16.) / (h * nx)
-   for j = 0L, ny-1L do begin
-      z = ((t - s[j])/lambda)^2
-      w = where(z lt 1., ngood)
-      if ngood gt 0L then begin
-         ker = norm * (1. - z[w])^2 / lambda[w]
-         val = weight[w] * ker
-         res[j] = total(val)
-         variance[j] = total((val - res[j])^2)/nx^2
-      endif
-   endfor
+   z *= z
+   mask = (z lt 1.)
+   value = norm * mask * (1. - z)^2 / lambda
 endif $                     
 else if keyword_set(triangular) then begin
    norm = 1./(h * nx)
-   for j = 0L, ny-1L do begin
-      z = abs(t - s[j])/lambda
-      w = where(z lt 1., ngood)
-      if ngood gt 0L then begin
-         ker = norm * (1. - z[w]) / lambda[w]
-         val = weight[w] * ker[w]
-         res[j] = total(val)
-         variance[j] = total((val - res[j])^2)/nx^2
-      endif
-   endfor
+   z = abs(z)
+   mask = (z lt 1.)
+   value = norm * mask * (1. - z) / lambda
 endif $                     
 else if keyword_set(gaussian) then begin
    norm = 1./(sqrt(2.*!pi) * h * nx)
-   for j = 0L, ny-1L do begin
-      z = 0.5 * ((t - s[j])/lambda)^2
-      w = where(z lt 30., ngood)
-      if ngood gt 0L then begin
-         ker = norm * exp(-z[w]) / lambda[w]
-         val = weight[w] * ker
-         res[j] = total(val)
-         variance[j] = total((val - res[j])^2)/nx^2
-      endif
-   endfor
-endif $
-else begin                      ; Epanechnikov
+   z *= z/2.
+   mask = (z lt 20.)
+   value =  norm * mask * exp(-z * mask) / lambda
+endif else begin                      ; Epanechnikov
    norm = 0.75 / (sqrt(5.) * h * nx)
-   for j = 0L, ny-1L do begin
-      z = ((t - s[j])/lambda)^2
-      w = where(z lt 5., ngood)
-      if ngood gt 0L then begin
-         ker = norm * (1. - z[w]/5.) / lambda[w]
-         val = weight[w] * ker
-         res[j] = total(val)
-         variance[j] = total((val - res[j])^2)/nx^2
-      endif
-   endfor
+   z *= z/5.
+   mask = (z lt 1.)
+   value =  norm * mask * (1. - z) / lambda
 endelse
 
-return, res
+if n_elements(weight) eq nx then $
+   value *= rebin(weight, nx, ny, /sample)
+result = total(value, 1)
+if arg_present(sigma) then $
+   sigma = sqrt(total(value^2, 1))
+if arg_present(variance) then $
+   variance = total((value - rebin(transpose(result), nx, ny, /sample))^2, 1) / nx
+
+return, result
 end
 
 
@@ -235,7 +218,7 @@ function akde, x, y, $
                triangular = triangular, $
                alpha = alpha, $
                variance = variance, $
-               mse = mse
+               sigma = sigma
 
 COMPILE_OPT IDL2
 
@@ -273,8 +256,11 @@ if n_elements(alpha) eq 1 then begin
 endif
 
 if ndims gt 1 then $
-   return, akde_nd(x, y, weight = weight, alpha = alpha, $
-                   variance = variance, mse = mse) $
+   return, akde_nd(x, y, $
+                   weight = weight, $
+                   alpha = alpha, $
+                   variance = variance, $
+                   sigma = sigma) $
 else $
    return, akde_1d(x, y, $
                    weight = weight, $
@@ -283,5 +269,5 @@ else $
                    triangular = triangular, $
                    alpha = alpha, $
                    variance = variance, $
-                   mse = mse)
+                   sigma = sigma)
 end
