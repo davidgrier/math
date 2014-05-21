@@ -89,8 +89,11 @@
 ; 05/01/2014 DGG and Henrique Moyses Implemented SIGMA.
 ; 05/02/2014 DGG Array-based implementation.  Elimianted BIAS and MSE
 ;    in favor of VARIANCE.
+; 05/20/2014 HM, David Ruffner and Chen Wang corrected normalization
+;    for N-dimensional case.
 ;
-; Copyright (c) 2010-2014 David G. Grier and Henrique Moyses
+; Copyright (c) 2010-2014 David G. Grier, Henrique Moyses,
+;    David Ruffner and Chen Wang
 ;-
 
 function kde_nd, x, y, $
@@ -132,7 +135,7 @@ variance = fltarr(ny)
 sigma = fltarr(ny)
 hfac = rebin(h, nd, nx, /sample)
 
-norm = 1./(2. * !pi * total(h^2))^(nd/2.) / nx
+norm = product((2. * !pi * h^2)^(-0.5)) / nx
 for j = 0L, ny-1L do begin
    z = 0.5 * total(((x - rebin(y[*,j], nd, nx, /sample)) / hfac)^2, 1)
    w = where(z lt 20., ngood)
