@@ -36,9 +36,12 @@ discrete samples (measurements) using the kernel density estimator method.
 discrete samples (measurements) using the _adaptive_ kernel density estimator method.
 4. **Special Functions**
     * **atanh**: Hyperbolic arctangent.
+    * **bessjp**: First derivative of Bessel functions of the first kind.
     * **besselj**: Bessel function of the the first kind of order 0.
     * **sphericalbesselj**: Spherical Bessel function of the first kind.
     * **zernike**: Class of functions related to Zernike polynomials.
+	* **zerojp**: Zeros of the derivatives of Bessel functions of the
+      first kind.
 5. **Quaternions**
     * **quaternion__define**: Defines an object that implements quaternion methods.
 
