@@ -2,12 +2,12 @@
 
 ;+
 ; Calculates the first derivative of the first kind of Bessel function
-; of order n for real arguments: $J_n'(x)$
+; of order $n$ for real arguments: $J_n'(x)$
 ;
 ; :Params:
-;    n : in, required type=integer
+;    n : in, required, type=integer
 ;        order of the Bessel function
-;    x : in, required type=fltarr
+;    x : in, required, type=fltarr
 ;        argument of the Bessel function
 ;
 ; :Returns:
