@@ -17,6 +17,7 @@ a two-dimensional data set, averaged over angles, as a function of
 radial distance from a specified center.
     * **azimedian**: Computes the median over angles, as a function of
 radial distance from a specified center.
+    * **msd3**: Computes the mean-square deviation of a time series.
     * **savgol2D**: Generates two-dimensional Savitzky-Golay smoothing
 and derivative kernels.
     * **zerocrossings**: Computes the coordinates of the zero crossings
