@@ -111,8 +111,11 @@ nd = sx[0]                      ; number of dimensions
 nx = float(sx[1])               ; number of data points
 ny = long(sy[1])                ; number of sampling points
 
-if n_elements(weight) ne nx then $
+if ~isa(weight, /number, /array) then $
    weight = replicate(1., nx)
+
+if n_elements(weight) ne nx then $
+   message, 'weight must have the same number of elements as the first argument'
 
 ; optimal smoothing parameter in each dimension
 ; Silverman Eqs. (3.30) and (3.31)
@@ -166,6 +169,11 @@ COMPILE_OPT IDL2, HIDDEN
 
 nx = float(n_elements(x))       ; number of data points
 ny = n_elements(y)              ; number of samples
+
+if ~isa(weight, /number, /array) then $
+   weight = replicate(1., nx)
+if n_elements(weight) ne nx then $
+   message, "weight must have same number of elements as first argument"
 
 ; optimal smoothing parameter
 ; Silverman Eqs. (3.30) and (3.31)
