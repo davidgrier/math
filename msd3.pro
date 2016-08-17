@@ -97,7 +97,7 @@ function msd3, p, nlags = nlags,  $
      mu = (npts gt 1) ? $
           total(d, 2)/npts : $  ; Mean-squared displacement at lag tau in set j
           d
-     m[*, tau] = total(mu)/nsets ; Overall MSD at lag tau
+     m[0, tau] = total(mu)/nsets ; Overall MSD at lag tau
      
      ;; Compute statistical variance of the squared displacements from
      ;; the MSD at lag time tau.
