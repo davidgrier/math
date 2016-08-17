@@ -215,8 +215,7 @@ endif else begin                      ; Epanechnikov
    value = norm * mask * (1. - z)
 endelse
 
-if n_elements(weight) eq nx then $
-   value *= rebin(weight, nx, ny, /sample)
+value *= rebin(weight, nx, ny, /sample)
 result = total(value, 1)
 if arg_present(sigma) then $
    sigma = sqrt(total(value^2, 1))
